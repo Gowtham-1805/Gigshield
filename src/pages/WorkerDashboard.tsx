@@ -242,7 +242,6 @@ export default function WorkerDashboard() {
         </motion.div>
 
         {/* Proactive AI Alert */}
-        <div id="alerts-section" />
         {proactiveAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
             <Card className="shadow-card border-primary/20 bg-primary/5 overflow-hidden relative">
