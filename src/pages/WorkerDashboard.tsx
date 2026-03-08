@@ -12,6 +12,7 @@ import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationBell } from '@/components/NotificationBell';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
