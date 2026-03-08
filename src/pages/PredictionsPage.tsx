@@ -210,10 +210,10 @@ export default function PredictionsPage() {
                     </div>
                   </div>
 
-                  {/* Platform Summary */}
+                  {/* City Summary */}
                   {platformSummary && (
                     <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 mb-4">
-                      <p className="text-xs font-medium text-primary mb-1">🤖 AI Platform Assessment</p>
+                      <p className="text-xs font-medium text-primary mb-1">🤖 AI {workerCity || 'City'} Assessment</p>
                       <p className="text-sm text-foreground/80">{platformSummary}</p>
                     </div>
                   )}
