@@ -455,6 +455,119 @@ export default function WorkerDashboard() {
           claimType={simulatedPayout?.claimType || 'RAIN_HEAVY'}
           workerName={worker?.name || 'Worker'}
         />
+
+        {/* Renew Demo Payment Overlay */}
+        <AnimatePresence>
+          {renewPayStage !== 'idle' && policy && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-sm"
+              >
+                <Card className="border-0 shadow-elevated overflow-hidden">
+                  <div className="bg-gradient-to-r from-primary to-primary/80 p-4 relative overflow-hidden">
+                    <div className="absolute inset-0 pattern-grid opacity-10" />
+                    <div className="relative flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                        <IndianRupee className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white/70 text-xs">GigShield Policy Renewal</p>
+                        <p className="text-white font-bold text-sm">UPI • {policy.tier} Plan</p>
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="p-6 space-y-6">
+                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
+                      <p className="text-muted-foreground text-sm mb-1">Renewal Premium</p>
+                      <span className="text-4xl font-display font-bold">₹{Number(policy.premium)}</span>
+                      <p className="text-xs text-muted-foreground mt-1">Weekly • {policy.tier} tier</p>
+                    </motion.div>
+
+                    <div className="flex items-center justify-center gap-3 py-3">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
+                          <Smartphone className="w-5 h-5 text-secondary" />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">Your UPI</span>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center relative">
+                        <div className="h-0.5 w-full bg-border absolute" />
+                        <motion.div
+                          initial={{ x: -30 }}
+                          animate={{ x: renewPayStage === 'completed' ? 30 : [-30, 30] }}
+                          transition={renewPayStage === 'completed' ? { duration: 0 } : { duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                          className="relative z-10 w-6 h-6 rounded-full bg-secondary flex items-center justify-center shadow-md"
+                        >
+                          {renewPayStage === 'completed' ? <CheckCircle2 className="w-4 h-4 text-white" /> : <ArrowRight className="w-3 h-3 text-white" />}
+                        </motion.div>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-lg">🛡️</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">GigShield</span>
+                      </div>
+                    </div>
+
+                    <motion.div key={renewPayStage} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+                      <div className={`flex items-center justify-center gap-2 ${renewStageConfig[renewPayStage].color}`}>
+                        {renewPayStage !== 'completed' && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <span className="text-lg">{renewStageConfig[renewPayStage].icon}</span>
+                        <span className="font-medium text-sm">{renewStageConfig[renewPayStage].label}</span>
+                      </div>
+                    </motion.div>
+
+                    <div className="flex items-center justify-center gap-2">
+                      {(['initiating', 'verifying', 'processing', 'completed'] as const).map((s) => {
+                        const stages = ['initiating', 'verifying', 'processing', 'completed'];
+                        const isComplete = stages.indexOf(s) <= stages.indexOf(renewPayStage);
+                        return <motion.div key={s} initial={{ scale: 0.5 }} animate={{ scale: isComplete ? 1 : 0.8 }} className={`w-2 h-2 rounded-full transition-colors ${isComplete ? 'bg-secondary' : 'bg-muted'}`} />;
+                      })}
+                    </div>
+
+                    <AnimatePresence>
+                      {renewPayStage === 'completed' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
+                          <div className="p-4 rounded-xl bg-secondary/5 border border-secondary/20 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Plan</span>
+                              <span className="font-medium">{policy.tier}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Amount</span>
+                              <span className="font-medium">₹{Number(policy.premium)}/week</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Transaction ID</span>
+                              <span className="font-medium font-mono text-xs">{renewTxnId}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm pt-2 border-t border-secondary/20">
+                              <span className="text-muted-foreground">Status</span>
+                              <Badge className="bg-secondary/10 text-secondary border-0"><CheckCircle2 className="w-3 h-3 mr-1" /> Paid</Badge>
+                            </div>
+                          </div>
+                          <Button onClick={handleRenewAfterPay} className="w-full gradient-shield text-primary-foreground border-0">
+                            🛡️ Activate Renewal
+                          </Button>
+                          <p className="text-center text-[10px] text-muted-foreground">Simulated payment • Demo mode</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Nav */}
