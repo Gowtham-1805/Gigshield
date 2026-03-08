@@ -19,6 +19,7 @@ import ProfilePage from "./pages/ProfilePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PredictionsPage from "./pages/PredictionsPage";
 import EarningsReportPage from "./pages/EarningsReportPage";
+import LedgerPage from "./pages/LedgerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
