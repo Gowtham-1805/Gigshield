@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { sendMockWhatsAppPremiumPaid } from '@/lib/whatsapp-mock';
 
 type PlanOption = { tier: string; price: string; premium: number; payout: number; desc: string; recommended: boolean };
 
