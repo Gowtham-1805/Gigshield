@@ -307,9 +307,9 @@ export default function LandingPage() {
               <p className="text-primary-foreground/60 text-lg mb-8 max-w-xl mx-auto">
                 Join thousands of gig workers who never worry about lost earnings due to weather or disruptions.
               </p>
-              <Link to="/signup">
-                <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-lg px-10 h-14 hover:opacity-90 shadow-glow-blue font-semibold">
-                  Start Now — It's ₹29/week <ArrowRight className="w-5 h-5 ml-1" />
+              <Link to="/signup" className="inline-block">
+                <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-base md:text-lg px-6 md:px-10 h-12 md:h-14 hover:opacity-90 shadow-glow-blue font-semibold whitespace-nowrap">
+                  Start Now — ₹29/week <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
                 </Button>
               </Link>
             </div>
