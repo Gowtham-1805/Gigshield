@@ -327,7 +327,7 @@ CRITICAL CLAIM ESTIMATION RULES:
           estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
         };
       });
-      }));
+      
 
       return new Response(JSON.stringify({
         forecasts: filteredForecasts,
