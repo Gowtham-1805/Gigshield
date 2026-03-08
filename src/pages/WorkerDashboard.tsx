@@ -38,6 +38,8 @@ export default function WorkerDashboard() {
   const [renewing, setRenewing] = useState(false);
   const [showPayoutSimulator, setShowPayoutSimulator] = useState(false);
   const [simulatedPayout, setSimulatedPayout] = useState<{ amount: number; claimType: string } | null>(null);
+  const [renewPayStage, setRenewPayStage] = useState<'idle' | 'initiating' | 'verifying' | 'processing' | 'completed'>('idle');
+  const [renewTxnId, setRenewTxnId] = useState('');
 
   const fetchData = async () => {
     if (!worker) return;
