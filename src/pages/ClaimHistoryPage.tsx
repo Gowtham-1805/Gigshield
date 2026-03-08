@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, Filter } from 'lucide-react';
+import { Shield, ArrowLeft, Filter, MessageSquarePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerTypes } from '@/lib/mock-data';
 import { Link } from 'react-router-dom';
+import { AppealDialog } from '@/components/AppealDialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors: Record<string, string> = {
@@ -24,32 +25,46 @@ export default function ClaimHistoryPage() {
   const [claims, setClaims] = useState<(Tables<'claims'> & { payouts?: Tables<'payouts'>[] })[]>([]);
   const [filter, setFilter] = useState('all');
   const [totalPaid, setTotalPaid] = useState(0);
+  const [appealClaim, setAppealClaim] = useState<any>(null);
+  const [appealedClaimIds, setAppealedClaimIds] = useState<Set<string>>(new Set());
+
+  const fetchData = async () => {
+    if (!worker) return;
+    const { data: policies } = await supabase
+      .from('policies')
+      .select('id')
+      .eq('worker_id', worker.id);
+    
+    if (!policies?.length) return;
+    const policyIds = policies.map(p => p.id);
+
+    const { data: claimsData } = await supabase
+      .from('claims')
+      .select('*, payouts(*)')
+      .in('policy_id', policyIds)
+      .order('created_at', { ascending: false });
+
+    setClaims(claimsData || []);
+    setTotalPaid((claimsData || []).filter(c => c.status === 'approved').reduce((s, c) => s + Number(c.amount), 0));
+
+    // Check which claims already have appeals
+    const claimIds = (claimsData || []).map(c => c.id);
+    if (claimIds.length > 0) {
+      const { data: appeals } = await supabase
+        .from('appeals')
+        .select('claim_id')
+        .in('claim_id', claimIds);
+      setAppealedClaimIds(new Set((appeals || []).map((a: any) => a.claim_id)));
+    }
+  };
 
   useEffect(() => {
-    if (!worker) return;
-    const fetch = async () => {
-      // Get all policies for this worker
-      const { data: policies } = await supabase
-        .from('policies')
-        .select('id')
-        .eq('worker_id', worker.id);
-      
-      if (!policies?.length) return;
-      const policyIds = policies.map(p => p.id);
-
-      const { data: claimsData } = await supabase
-        .from('claims')
-        .select('*, payouts(*)')
-        .in('policy_id', policyIds)
-        .order('created_at', { ascending: false });
-
-      setClaims(claimsData || []);
-      setTotalPaid((claimsData || []).filter(c => c.status === 'approved').reduce((s, c) => s + Number(c.amount), 0));
-    };
-    fetch();
+    fetchData();
   }, [worker]);
 
   const filtered = filter === 'all' ? claims : claims.filter(c => c.status === filter);
+  const canAppeal = (claim: Tables<'claims'>) =>
+    ['flagged', 'rejected'].includes(claim.status) && !appealedClaimIds.has(claim.id);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -105,6 +120,7 @@ export default function ClaimHistoryPage() {
           {filtered.map((claim, i) => {
             const trigger = triggerTypes.find(t => t.id === claim.trigger_type);
             const payout = (claim as any).payouts?.[0];
+            const hasAppeal = appealedClaimIds.has(claim.id);
             return (
               <motion.div key={claim.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className="shadow-card">
@@ -137,6 +153,23 @@ export default function ClaimHistoryPage() {
                         {payout.upi_id && <span className="text-muted-foreground ml-2">via {payout.upi_id}</span>}
                       </div>
                     )}
+                    {/* Appeal Button */}
+                    {canAppeal(claim) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full mt-3 border-accent text-accent hover:bg-accent/10"
+                        onClick={() => setAppealClaim(claim)}
+                      >
+                        <MessageSquarePlus className="w-4 h-4 mr-2" />
+                        Appeal This Claim
+                      </Button>
+                    )}
+                    {hasAppeal && (
+                      <div className="mt-2 p-2 rounded-lg bg-accent/5 text-xs text-center">
+                        <span className="text-accent font-medium">📨 Appeal submitted — under review</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -144,6 +177,13 @@ export default function ClaimHistoryPage() {
           })}
         </div>
       </main>
+
+      <AppealDialog
+        open={!!appealClaim}
+        onOpenChange={(open) => !open && setAppealClaim(null)}
+        claim={appealClaim}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }

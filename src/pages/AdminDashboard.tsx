@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import type { Tables } from '@/integrations/supabase/types';
 const sidebarItems = [
   { icon: LayoutDashboard, label: 'Overview', id: 'overview' },
   { icon: FileText, label: 'Claims', id: 'claims' },
+  { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
   { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
@@ -131,6 +132,7 @@ export default function AdminDashboard() {
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {activeTab === 'overview' && <OverviewTab stats={stats} />}
               {activeTab === 'claims' && <ClaimsTab />}
+              {activeTab === 'appeals' && <AppealsTab />}
               {activeTab === 'fraud' && <FraudTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
@@ -405,6 +407,237 @@ function ClaimsTab() {
                   </Button>
                 )}
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+function AppealsTab() {
+  const [appeals, setAppeals] = useState<any[]>([]);
+  const [filter, setFilter] = useState('pending');
+  const [selectedAppeal, setSelectedAppeal] = useState<any>(null);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    const fetchAppeals = async () => {
+      const { data } = await supabase
+        .from('appeals')
+        .select('*, claims!inner(id, amount, trigger_type, fraud_score, status, fraud_details, policies!inner(tier, workers!inner(name, zone_id, zones(name))))')
+        .order('created_at', { ascending: false });
+      setAppeals(data || []);
+    };
+    fetchAppeals();
+
+    const channel = supabase
+      .channel('appeals-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appeals' }, () => fetchAppeals())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const filtered = filter === 'all' ? appeals : appeals.filter((a: any) => a.status === filter);
+
+  const handleDecision = async (decision: 'approved' | 'rejected') => {
+    if (!selectedAppeal) return;
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('review-appeal', {
+        body: { appeal_id: selectedAppeal.id, decision, admin_notes: adminNotes || null },
+      });
+      if (error || !data?.success) throw new Error(data?.error || 'Failed');
+      toast.success(`Appeal ${decision}`);
+      setSelectedAppeal(null);
+      setAdminNotes('');
+      // Refresh
+      const { data: refreshed } = await supabase
+        .from('appeals')
+        .select('*, claims!inner(id, amount, trigger_type, fraud_score, status, fraud_details, policies!inner(tier, workers!inner(name, zone_id, zones(name))))')
+        .order('created_at', { ascending: false });
+      setAppeals(refreshed || []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed');
+    }
+    setProcessing(false);
+  };
+
+  return (
+    <>
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display">Appeals Review Queue</CardTitle>
+          <CardDescription>Review worker appeals with photo evidence</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList>
+              <TabsTrigger value="pending">Pending ({appeals.filter((a: any) => a.status === 'pending').length})</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+            <TabsContent value={filter} className="mt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Claim</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Evidence</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No appeals found.</TableCell></TableRow>
+                  )}
+                  {filtered.map((appeal: any) => (
+                    <TableRow key={appeal.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedAppeal(appeal); setAdminNotes(''); }}>
+                      <TableCell className="font-medium">{appeal.claims?.policies?.workers?.name || 'Unknown'}</TableCell>
+                      <TableCell>{appeal.claims?.trigger_type?.replace(/_/g, ' ')}</TableCell>
+                      <TableCell>₹{Number(appeal.claims?.amount || 0).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {(appeal.evidence_urls?.length || 0) > 0 ? (
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                            <Image className="w-3 h-3 mr-1" />{appeal.evidence_urls.length} photo{appeal.evidence_urls.length > 1 ? 's' : ''}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">None</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          appeal.status === 'approved' ? 'bg-secondary/10 text-secondary border-secondary/20' :
+                          appeal.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          'bg-accent/10 text-accent border-accent/20'
+                        }>
+                          {appeal.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{new Date(appeal.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell><Eye className="w-4 h-4 text-muted-foreground" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Appeal Detail Dialog */}
+      <Dialog open={!!selectedAppeal} onOpenChange={() => setSelectedAppeal(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Appeal Details</DialogTitle>
+            <DialogDescription>Review evidence and make a decision</DialogDescription>
+          </DialogHeader>
+          {selectedAppeal && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Worker</p>
+                  <p className="font-medium">{selectedAppeal.claims?.policies?.workers?.name}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Zone</p>
+                  <p className="font-medium">{selectedAppeal.claims?.policies?.workers?.zones?.name}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Trigger</p>
+                  <p className="font-medium">{selectedAppeal.claims?.trigger_type?.replace(/_/g, ' ')}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="font-display font-bold">₹{Number(selectedAppeal.claims?.amount).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Worker's Reason */}
+              <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                <p className="text-xs font-medium text-accent mb-1">Worker's Reason</p>
+                <p className="text-sm">{selectedAppeal.reason}</p>
+              </div>
+
+              {/* Evidence Photos */}
+              {selectedAppeal.evidence_urls?.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Photo Evidence</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedAppeal.evidence_urls.map((url: string, i: number) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all">
+                        <img src={url} alt={`Evidence ${i + 1}`} className="w-full h-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fraud Details */}
+              {selectedAppeal.claims?.fraud_details && (
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-2">Original Fraud Breakdown</p>
+                  <div className="space-y-1 text-sm">
+                    {Object.entries(selectedAppeal.claims.fraud_details as Record<string, any>).map(([key, val]) => (
+                      <div key={key} className="flex justify-between">
+                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-medium">{String(val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Decision */}
+              {['pending', 'under_review'].includes(selectedAppeal.status) && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Admin Notes (optional)</label>
+                    <textarea
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"
+                      rows={2}
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="Add notes about your decision..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                      onClick={() => handleDecision('approved')}
+                      disabled={processing}
+                    >
+                      {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : '✅ Approve Appeal'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDecision('rejected')}
+                      disabled={processing}
+                    >
+                      {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : '❌ Reject Appeal'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolved State */}
+              {!['pending', 'under_review'].includes(selectedAppeal.status) && (
+                <div className={`p-3 rounded-lg ${selectedAppeal.status === 'approved' ? 'bg-secondary/10' : 'bg-destructive/10'}`}>
+                  <p className="font-medium text-sm">
+                    {selectedAppeal.status === 'approved' ? '✅ Appeal was approved' : '❌ Appeal was rejected'}
+                  </p>
+                  {selectedAppeal.admin_notes && (
+                    <p className="text-xs text-muted-foreground mt-1">Notes: {selectedAppeal.admin_notes}</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

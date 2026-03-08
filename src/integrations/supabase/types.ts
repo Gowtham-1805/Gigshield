@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      appeals: {
+        Row: {
+          admin_notes: string | null
+          claim_id: string
+          created_at: string
+          evidence_urls: string[] | null
+          id: string
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          claim_id: string
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          claim_id?: string
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appeals_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: true
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claims: {
         Row: {
           amount: number
