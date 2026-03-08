@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.calculate-premium]
 verify_jwt = false
+
+[functions.make-admin]
+verify_jwt = false
