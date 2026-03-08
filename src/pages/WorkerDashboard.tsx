@@ -319,7 +319,7 @@ export default function WorkerDashboard() {
             lastLat={(worker as any)?.last_lat}
             lastLng={(worker as any)?.last_lng}
             lastLocationAt={(worker as any)?.last_location_at}
-            onLocationUpdated={fetchData}
+            onLocationUpdated={async () => { await refreshWorker(); await fetchData(); }}
           />
         </motion.div>
 
