@@ -309,9 +309,11 @@ export default function TransparencyLedger() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs font-mono ${entry.fraud_score > 0.5 ? 'text-destructive font-bold' : entry.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}`}>
-                          {(entry.fraud_score * 100).toFixed(0)}%
-                        </span>
+                        {entry.payout_amount != null ? (
+                          <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">Paid</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
                         {entry.payout_amount != null ? `₹${entry.payout_amount}` : (
