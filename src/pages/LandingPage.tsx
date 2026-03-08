@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Shield, CloudRain, Zap, ChevronRight, Check, ArrowRight, Sparkles, Activity, Umbrella, IndianRupee } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ export default function LandingPage() {
             <span className="font-display font-bold text-lg tracking-tight">GigShield</span>
           </Link>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/login">
               <Button variant="ghost" size="sm" className="font-medium">Login</Button>
             </Link>
