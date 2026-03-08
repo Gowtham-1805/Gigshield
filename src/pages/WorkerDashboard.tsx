@@ -356,7 +356,7 @@ export default function WorkerDashboard() {
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full">
-              {t('claimHistory')}
+              Claim History
             </Button>
           </Link>
         </div>
