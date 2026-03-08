@@ -30,6 +30,8 @@ export default function WorkerDashboard() {
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
   const [zone, setZone] = useState<Tables<'zones'> | null>(null);
   const [claimedThisWeek, setClaimedThisWeek] = useState(0);
+  const [weatherAlert, setWeatherAlert] = useState<{ text: string; icon: string } | null>(null);
+  const [recentIncidents, setRecentIncidents] = useState<Tables<'incidents'>[]>([]);
 
   useEffect(() => {
     if (!worker) return;
