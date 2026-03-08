@@ -297,6 +297,68 @@ export default function TransparencyLedger({ workerId, isAdmin = false }: Transp
   );
 }
 
+function LedgerTable({ entries, isAdmin, onSelect }: { entries: LedgerEntry[]; isAdmin: boolean; onSelect: (e: LedgerEntry) => void }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Date</TableHead>
+          <TableHead>Trigger</TableHead>
+          <TableHead>Zone</TableHead>
+          {isAdmin && <TableHead>Worker</TableHead>}
+          <TableHead>Claim</TableHead>
+          <TableHead>Payout</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {entries.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
+              No transactions recorded yet
+            </TableCell>
+          </TableRow>
+        )}
+        {entries.map((entry) => {
+          const cStatus = claimStatusConfig[entry.claim.status] || claimStatusConfig.processing;
+          const pStatus = entry.payout ? payoutStatusConfig[entry.payout.status] : null;
+          return (
+            <TableRow key={entry.claim.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onSelect(entry)}>
+              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                {format(new Date(entry.incident.created_at), 'dd MMM, HH:mm')}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5">
+                  <span>{triggerIcons[entry.incident.trigger_type] || '⚡'}</span>
+                  <span className="text-xs font-medium">{entry.incident.trigger_type.replace(/_/g, ' ')}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-sm">{entry.incident.zone_name}</TableCell>
+              {isAdmin && <TableCell className="text-sm font-medium">{entry.claim.worker_name}</TableCell>}
+              <TableCell className="font-medium">₹{entry.claim.amount.toLocaleString()}</TableCell>
+              <TableCell>
+                {entry.payout ? (
+                  <span className="font-medium">₹{entry.payout.amount.toLocaleString()}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className={`text-[10px] ${cStatus.bg} ${cStatus.color}`}>{entry.claim.status}</Badge>
+                  {pStatus && <Badge variant="outline" className={`text-[10px] ${pStatus.bg} ${pStatus.color}`}>{pStatus.label}</Badge>}
+                </div>
+              </TableCell>
+              <TableCell><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
 function LedgerDetail({ entry, isAdmin }: { entry: LedgerEntry; isAdmin: boolean }) {
   const steps = [
     {
