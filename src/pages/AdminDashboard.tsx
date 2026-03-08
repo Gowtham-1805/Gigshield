@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ const sidebarItems = [
   { icon: FileText, label: 'Claims', id: 'claims' },
   { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
   { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
+  { icon: Brain, label: 'Predictions', id: 'predictions' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
   { icon: DollarSign, label: 'Financial', id: 'financial' },
@@ -134,6 +135,7 @@ export default function AdminDashboard() {
               {activeTab === 'claims' && <ClaimsTab />}
               {activeTab === 'appeals' && <AppealsTab />}
               {activeTab === 'fraud' && <FraudTab />}
+              {activeTab === 'predictions' && <PredictionsTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
               {activeTab === 'financial' && <FinancialTab />}
@@ -643,6 +645,120 @@ function AppealsTab() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function PredictionsTab() {
+  const [forecasts, setForecasts] = useState<any[]>([]);
+  const [platformSummary, setPlatformSummary] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase.functions.invoke('ai-predict', {
+          body: { type: 'zone_detailed_forecast' },
+        });
+        setForecasts(data?.forecasts || []);
+        setPlatformSummary(data?.platform_summary || '');
+      } catch (e) {
+        console.error('Forecast error:', e);
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, []);
+
+  const sorted = [...forecasts].sort((a: any, b: any) => b.risk_score - a.risk_score);
+
+  return (
+    <div className="space-y-6">
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+            AI-Powered 7-Day Risk Forecast
+          </CardTitle>
+          <CardDescription>Detailed per-zone weather disruption predictions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center gap-3 py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground animate-pulse">🤖 AI analyzing weather patterns and historical data...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {platformSummary && (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <p className="text-xs font-medium text-primary mb-1">Platform Assessment</p>
+                  <p className="text-sm">{platformSummary}</p>
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Zone</TableHead>
+                    <TableHead>Risk</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Primary Threat</TableHead>
+                    <TableHead>Peak Day</TableHead>
+                    <TableHead>Est. Claims</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sorted.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No forecast data yet.</TableCell></TableRow>
+                  )}
+                  {sorted.map((f: any) => (
+                    <TableRow key={f.zone_id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{f.zone_name}</p>
+                          <p className="text-xs text-muted-foreground">{f.city}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          f.overall_risk === 'critical' || f.overall_risk === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          f.overall_risk === 'moderate' ? 'bg-accent/10 text-accent border-accent/20' :
+                          'bg-secondary/10 text-secondary border-secondary/20'
+                        }>
+                          {f.overall_risk}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`font-bold ${f.risk_score >= 70 ? 'text-destructive' : f.risk_score >= 40 ? 'text-accent' : 'text-secondary'}`}>
+                        {f.risk_score}
+                      </TableCell>
+                      <TableCell>{f.primary_threat}</TableCell>
+                      <TableCell>{f.peak_risk_day || '—'}</TableCell>
+                      <TableCell>₹{((f.estimated_claims_inr || 0) / 1000).toFixed(0)}K</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI Summary per zone */}
+      {!loading && sorted.length > 0 && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {sorted.slice(0, 4).map((f: any) => (
+            <Card key={f.zone_id} className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-display">{f.zone_name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{f.ai_summary}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
