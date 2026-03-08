@@ -49,7 +49,7 @@ export default function DemoTriggerPanel() {
 
     const pipelineSteps: Step[] = [
       { id: '1', label: 'Incident Created', icon: AlertTriangle, detail: `${trigger.label} detected in ${zone.name}`, status: 'pending' },
-      { id: '2', label: 'Affected Workers Identified', icon: Search, detail: `Scanning active policies in ${zone.name}...`, status: 'pending' },
+      { id: '2', label: 'Scanning Workers (Zone + GPS)', icon: Search, detail: `Finding registered & GPS-nearby workers in ${zone.name}...`, status: 'pending' },
       { id: '3', label: 'Auto-Initiating Claims', icon: Zap, detail: 'Processing claims...', status: 'pending' },
       { id: '4', label: 'Fraud Checks Running', icon: Shield, detail: 'GPS validation, weather confirm, anomaly scoring', status: 'pending' },
       { id: '5', label: 'Claims Approved', icon: Check, detail: 'Evaluating results...', status: 'pending' },
