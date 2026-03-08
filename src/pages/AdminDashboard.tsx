@@ -527,86 +527,123 @@ function AnalyticsTab() {
     });
   }, []);
 
+  const triggerLabels: Record<string, string> = {
+    RAIN_HEAVY: 'Rain',
+    RAIN_EXTREME: 'Flood',
+    HEAT_EXTREME: 'Heat',
+    AQI_SEVERE: 'AQI',
+    CURFEW_LOCAL: 'Curfew',
+    STORM_CYCLONE: 'Storm',
+  };
+
   return (
     <div className="space-y-6">
       {/* Charts Row */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="shadow-card">
+        <Card className="shadow-card overflow-hidden">
           <CardHeader>
             <CardTitle className="text-base font-display">Claims by Trigger Type</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 pb-4">
             {claimsByType.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={claimsByType} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name.replace(/_/g, ' ')} ${(percent * 100).toFixed(0)}%`}>
-                    {claimsByType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="w-full" style={{ minHeight: 280 }}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={claimsByType}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={40}
+                      dataKey="value"
+                      paddingAngle={2}
+                      label={({ name, percent }) => `${triggerLabels[name] || name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={{ strokeWidth: 1 }}
+                    >
+                      {claimsByType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(value: number, name: string) => [value, triggerLabels[name] || name]} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             ) : <p className="text-sm text-muted-foreground text-center py-8">No claims data yet</p>}
           </CardContent>
         </Card>
 
-        <Card className="shadow-card">
+        <Card className="shadow-card overflow-hidden">
           <CardHeader>
             <CardTitle className="text-base font-display">Daily Claims (Last 7 Days)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dailyClaims}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Claims" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="px-2 pb-4">
+            <div className="w-full" style={{ minHeight: 280 }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={dailyClaims} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Claims" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="shadow-card">
+        <Card className="shadow-card overflow-hidden">
           <CardHeader>
             <CardTitle className="text-base font-display">Claims by Status</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 pb-4">
             {claimsByStatus.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={claimsByStatus} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {claimsByStatus.map((entry, i) => (
-                      <Cell key={i} fill={
-                        entry.name === 'approved' ? 'hsl(160, 84%, 39%)' :
-                        entry.name === 'flagged' ? 'hsl(0, 84%, 60%)' :
-                        entry.name === 'rejected' ? 'hsl(0, 60%, 45%)' :
-                        'hsl(38, 92%, 50%)'
-                      } />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="w-full" style={{ minHeight: 280 }}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={claimsByStatus}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={40}
+                      dataKey="value"
+                      paddingAngle={2}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={{ strokeWidth: 1 }}
+                    >
+                      {claimsByStatus.map((entry, i) => (
+                        <Cell key={i} fill={
+                          entry.name === 'approved' ? 'hsl(160, 84%, 39%)' :
+                          entry.name === 'flagged' ? 'hsl(0, 84%, 60%)' :
+                          entry.name === 'rejected' ? 'hsl(0, 60%, 45%)' :
+                          'hsl(38, 92%, 50%)'
+                        } />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             ) : <p className="text-sm text-muted-foreground text-center py-8">No claims data yet</p>}
           </CardContent>
         </Card>
 
-        <Card className="shadow-card">
+        <Card className="shadow-card overflow-hidden">
           <CardHeader>
             <CardTitle className="text-base font-display">Daily Disbursement (₹)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={dailyClaims}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} formatter={(v: number) => `₹${v.toLocaleString()}`} />
-                <Line type="monotone" dataKey="amount" stroke="hsl(var(--secondary))" strokeWidth={2} dot={{ fill: 'hsl(var(--secondary))' }} name="Amount" />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="px-2 pb-4">
+            <div className="w-full" style={{ minHeight: 280 }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={dailyClaims} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} formatter={(v: number) => `₹${v.toLocaleString()}`} />
+                  <Line type="monotone" dataKey="amount" stroke="hsl(var(--secondary))" strokeWidth={2} dot={{ fill: 'hsl(var(--secondary))' }} name="Amount" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -618,7 +655,7 @@ function AnalyticsTab() {
         </CardHeader>
         <CardContent>
           {loading && <p className="text-muted-foreground animate-pulse">🤖 Generating predictions...</p>}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {predictions.map((pred: any) => (
               <Card key={pred.city} className={pred.probability > 60 ? 'border-destructive/30 bg-destructive/5' : ''}>
                 <CardContent className="p-4 text-center">
