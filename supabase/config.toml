@@ -1,1 +1,7 @@
 project_id = "wepsgnqxykzcynsyfomk"
+
+[functions.fire-trigger]
+verify_jwt = false
+
+[functions.ai-predict]
+verify_jwt = false
