@@ -1,6 +1,5 @@
 # 🛡️ GigShield — AI-Powered Parametric Insurance for India's Gig Workers
 
-> **"Kaam ruke toh paisa nahi, GigShield hai na!"**
 > *(When work stops, your income doesn't — GigShield has your back!)*
 
 **GigShield** is an AI-powered parametric micro-insurance platform built to protect India's 15 million+ gig economy workers from income loss caused by weather disruptions, extreme pollution, and other parametric events — with instant, automated payouts and zero paperwork.
