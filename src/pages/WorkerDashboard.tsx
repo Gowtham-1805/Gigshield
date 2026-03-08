@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Loader2 } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
 import WorkerReportPanel from '@/components/WorkerReportPanel';
+import { PayoutSimulator } from '@/components/PayoutSimulator';
 import { useAuth } from '@/lib/auth-context';
 import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
@@ -33,6 +34,8 @@ export default function WorkerDashboard() {
   const [recentIncidents, setRecentIncidents] = useState<Tables<'incidents'>[]>([]);
   const [proactiveAlert, setProactiveAlert] = useState<string | null>(null);
   const [renewing, setRenewing] = useState(false);
+  const [showPayoutSimulator, setShowPayoutSimulator] = useState(false);
+  const [simulatedPayout, setSimulatedPayout] = useState<{ amount: number; claimType: string } | null>(null);
 
   const fetchData = async () => {
     if (!worker) return;
@@ -390,20 +393,41 @@ export default function WorkerDashboard() {
         </motion.div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button 
             className="gradient-shield text-primary-foreground border-0 h-12 shadow-glow-blue font-semibold"
             onClick={handleRenew}
             disabled={renewing || !policy}
           >
-            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>Renew Plan</>}
+            {renewing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Renew'}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-12 font-semibold border-secondary/30 text-secondary hover:bg-secondary/10"
+            onClick={() => {
+              setSimulatedPayout({ amount: 450, claimType: 'RAIN_HEAVY' });
+              setShowPayoutSimulator(true);
+            }}
+          >
+            <Banknote className="w-4 h-4 mr-1" />
+            Demo Pay
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full font-semibold border-border/50">
-              Claim History
+              History
             </Button>
           </Link>
         </div>
+
+        {/* Payout Simulator Modal */}
+        <PayoutSimulator
+          isOpen={showPayoutSimulator}
+          onClose={() => setShowPayoutSimulator(false)}
+          amount={simulatedPayout?.amount || 450}
+          upiId={worker?.phone ? `${worker.phone}@upi` : 'worker@ybl'}
+          claimType={simulatedPayout?.claimType || 'RAIN_HEAVY'}
+          workerName={worker?.name || 'Worker'}
+        />
       </main>
 
       {/* Mobile Bottom Nav */}
