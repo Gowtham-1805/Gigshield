@@ -49,6 +49,15 @@ export default function WorkerDashboard() {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
       setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
+
+      // Fetch payouts for the worker's claims
+      if (claimsData?.length) {
+        const claimIds = claimsData.map(c => c.id);
+        const { data: payoutsData } = await supabase
+          .from('payouts').select('*').in('claim_id', claimIds)
+          .order('created_at', { ascending: false });
+        setPayouts(payoutsData || []);
+      }
     }
 
     if (worker.zone_id) {
