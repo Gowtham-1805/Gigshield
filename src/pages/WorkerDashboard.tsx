@@ -164,10 +164,10 @@ export default function WorkerDashboard() {
   };
 
   const navItems = [
-    { icon: Home, label: t('home'), active: true, path: '/worker' },
-    { icon: FileText, label: t('claims'), path: '/claims' },
-    { icon: Bell, label: t('alerts'), path: '/worker' },
-    { icon: User, label: t('profile'), path: '/profile' },
+    { icon: Home, label: 'Home', active: true, path: '/worker' },
+    { icon: FileText, label: 'Claims', path: '/claims' },
+    { icon: Bell, label: 'Alerts', path: '/worker' },
+    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
