@@ -6,21 +6,85 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useLanguage } from '@/lib/language-context';
-import { mockWorker, triggerTypes } from '@/lib/mock-data';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useAuth } from '@/lib/auth-context';
+import { triggerTypes } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors = {
   approved: 'bg-secondary/10 text-secondary border-secondary/20',
   processing: 'bg-accent/10 text-accent border-accent/20',
   flagged: 'bg-destructive/10 text-destructive border-destructive/20',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20',
 };
-const statusIcons = { approved: '✅', processing: '🔄', flagged: '🚩' };
+const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function WorkerDashboard() {
   const { t } = useLanguage();
+  const { worker, user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileNav, setMobileNav] = useState(false);
-  const worker = mockWorker;
+  const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
+  const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
+  const [zone, setZone] = useState<Tables<'zones'> | null>(null);
+  const [claimedThisWeek, setClaimedThisWeek] = useState(0);
+
+  useEffect(() => {
+    if (!worker) return;
+
+    const fetchData = async () => {
+      // Fetch active policy
+      const { data: pol } = await supabase
+        .from('policies')
+        .select('*')
+        .eq('worker_id', worker.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setPolicy(pol);
+
+      // Fetch claims through policies
+      if (pol) {
+        const { data: claimsData } = await supabase
+          .from('claims')
+          .select('*')
+          .eq('policy_id', pol.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        setClaims(claimsData || []);
+
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
+        setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
+      }
+
+      // Fetch zone
+      if (worker.zone_id) {
+        const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
+        setZone(z);
+      }
+    };
+
+    fetchData();
+
+    // Realtime for claims
+    const channel = supabase
+      .channel('worker-claims')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [worker]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const navItems = [
     { icon: Home, label: t('home'), active: true },
@@ -42,6 +106,9 @@ export default function WorkerDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
+              <LogOut className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileNav(!mobileNav)}>
               {mobileNav ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -53,39 +120,50 @@ export default function WorkerDashboard() {
         {/* Greeting */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-muted-foreground text-sm">{t('welcomeBack')},</p>
-          <h1 className="font-display text-2xl font-bold">{worker.name} 👋</h1>
+          <h1 className="font-display text-2xl font-bold">{worker?.name || 'Worker'} 👋</h1>
         </motion.div>
 
         {/* Active Plan Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="gradient-shield text-primary-foreground overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary-foreground/5 -translate-y-8 translate-x-8" />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-xs opacity-80">{t('activePlan')}</p>
-                  <p className="font-display font-bold text-lg">{worker.activePlan.tier}</p>
+        {policy ? (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="gradient-shield text-primary-foreground overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary-foreground/5 -translate-y-8 translate-x-8" />
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs opacity-80">{t('activePlan')}</p>
+                    <p className="font-display font-bold text-lg">{policy.tier}</p>
+                  </div>
+                  <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
+                    {t('coverageActive')} ✅
+                  </Badge>
                 </div>
-                <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
-                  {t('coverageActive')} ✅
-                </Badge>
-              </div>
-              <p className="text-xs opacity-70">
-                {t('validUntil')}: {worker.activePlan.startDate} → {worker.activePlan.endDate}
-              </p>
-              <div className="flex gap-4 mt-4">
-                <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
-                  <p className="font-display font-bold text-xl">₹{worker.claimedThisWeek.toLocaleString()}</p>
-                  <p className="text-[10px] opacity-70">{t('claimedThisWeek')}</p>
+                <p className="text-xs opacity-70">
+                  {t('validUntil')}: {policy.start_date} → {policy.end_date}
+                </p>
+                <div className="flex gap-4 mt-4">
+                  <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
+                    <p className="font-display font-bold text-xl">₹{claimedThisWeek.toLocaleString()}</p>
+                    <p className="text-[10px] opacity-70">{t('claimedThisWeek')}</p>
+                  </div>
+                  <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
+                    <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
+                    <p className="text-[10px] opacity-70">{t('maxCoverage')}</p>
+                  </div>
                 </div>
-                <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
-                  <p className="font-display font-bold text-xl">₹{worker.activePlan.maxPayout.toLocaleString()}</p>
-                  <p className="text-[10px] opacity-70">{t('maxCoverage')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="shadow-card border-accent/30">
+              <CardContent className="p-5 text-center">
+                <p className="text-muted-foreground mb-3">No active plan yet</p>
+                <Button className="gradient-shield text-primary-foreground border-0">Get Protected Now</Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Shield Score */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
@@ -94,11 +172,11 @@ export default function WorkerDashboard() {
               <CardTitle className="text-base font-display">{t('shieldScore')}</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
-              <ShieldScoreGauge score={worker.shieldScore} />
+              <ShieldScoreGauge score={worker?.shield_score || 50} />
               <div className="text-right text-sm text-muted-foreground space-y-1">
-                <p>Zone: {worker.zoneName}</p>
-                <p>Platform: {worker.platform}</p>
-                <p>Avg ₹{worker.weeklyEarnings}/week</p>
+                <p>Zone: {zone?.name || worker?.city || 'N/A'}</p>
+                <p>Platform: {worker?.platform || 'N/A'}</p>
+                <p>Avg ₹{Number(worker?.weekly_earnings || 0).toLocaleString()}/week</p>
               </div>
             </CardContent>
           </Card>
@@ -128,19 +206,22 @@ export default function WorkerDashboard() {
               <CardTitle className="text-base font-display">{t('recentActivity')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {worker.claims.slice(0, 4).map((claim) => {
-                const trigger = triggerTypes.find(tt => tt.id === claim.type);
+              {claims.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No claims yet. Stay protected! 🛡️</p>
+              )}
+              {claims.slice(0, 4).map((claim) => {
+                const trigger = triggerTypes.find(tt => tt.id === claim.trigger_type);
                 return (
                   <div key={claim.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                     <div className="flex items-center gap-3">
-                      <span className="text-lg">{statusIcons[claim.status]}</span>
+                      <span className="text-lg">{statusIcons[claim.status] || '🔄'}</span>
                       <div>
-                        <p className="text-sm font-medium">₹{claim.amount} {trigger?.icon} {trigger?.label}</p>
-                        <p className="text-xs text-muted-foreground">{claim.date}</p>
+                        <p className="text-sm font-medium">₹{Number(claim.amount)} {trigger?.icon} {trigger?.label}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(claim.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`text-xs ${statusColors[claim.status]}`}>
-                      {t(claim.status as any)}
+                    <Badge variant="outline" className={`text-xs ${statusColors[claim.status] || ''}`}>
+                      {claim.status}
                     </Badge>
                   </div>
                 );
@@ -152,7 +233,7 @@ export default function WorkerDashboard() {
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button className="gradient-shield text-primary-foreground border-0 h-12">
-            {t('renewPlan')} — ₹{worker.activePlan.premium}/wk
+            {t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}
           </Button>
           <Button variant="outline" className="h-12">
             {t('claimHistory')}

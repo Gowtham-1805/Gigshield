@@ -6,7 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { zones, triggerTypes } from '@/lib/mock-data';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
+import type { Tables } from '@/integrations/supabase/types';
+
+const triggerTypeOptions = [
+  { id: 'RAIN_HEAVY', label: 'Heavy Rainfall', icon: '🌧️' },
+  { id: 'RAIN_EXTREME', label: 'Extreme Rain', icon: '🌊' },
+  { id: 'HEAT_EXTREME', label: 'Extreme Heat', icon: '🔥' },
+  { id: 'AQI_SEVERE', label: 'Severe AQI', icon: '😷' },
+  { id: 'CURFEW_LOCAL', label: 'Local Curfew', icon: '🚫' },
+  { id: 'STORM_CYCLONE', label: 'Cyclone', icon: '🌀' },
+];
 
 interface Step {
   id: string;
@@ -22,35 +34,70 @@ export default function DemoTriggerPanel() {
   const [severity, setSeverity] = useState([70]);
   const [running, setRunning] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [zones, setZones] = useState<Tables<'zones'>[]>([]);
+
+  useEffect(() => {
+    supabase.from('zones').select('*').then(({ data }) => setZones(data || []));
+  }, []);
 
   const fireTrigger = async () => {
     const zone = zones.find(z => z.id === selectedZone);
-    const trigger = triggerTypes.find(t => t.id === selectedTrigger);
+    const trigger = triggerTypeOptions.find(t => t.id === selectedTrigger);
     if (!zone || !trigger) return;
+
+    setRunning(true);
 
     const pipelineSteps: Step[] = [
       { id: '1', label: 'Incident Created', icon: AlertTriangle, detail: `${trigger.label} detected in ${zone.name}`, status: 'pending' },
-      { id: '2', label: 'Affected Workers Identified', icon: Search, detail: `45 active policies in ${zone.name}`, status: 'pending' },
-      { id: '3', label: 'Auto-Initiating Claims', icon: Zap, detail: '45 claims initiated', status: 'pending' },
-      { id: '4', label: 'Fraud Checks Running', icon: Shield, detail: 'GPS validation, multi-source weather confirm, anomaly scoring', status: 'pending' },
-      { id: '5', label: 'Claims Approved', icon: Check, detail: '43 approved, 2 flagged for review', status: 'pending' },
-      { id: '6', label: 'Payouts Initiated', icon: DollarSign, detail: '₹25,800 disbursed via UPI to 43 workers', status: 'pending' },
+      { id: '2', label: 'Affected Workers Identified', icon: Search, detail: `Scanning active policies in ${zone.name}...`, status: 'pending' },
+      { id: '3', label: 'Auto-Initiating Claims', icon: Zap, detail: 'Processing claims...', status: 'pending' },
+      { id: '4', label: 'Fraud Checks Running', icon: Shield, detail: 'GPS validation, weather confirm, anomaly scoring', status: 'pending' },
+      { id: '5', label: 'Claims Approved', icon: Check, detail: 'Evaluating results...', status: 'pending' },
+      { id: '6', label: 'Payouts Initiated', icon: DollarSign, detail: 'Disbursing via UPI...', status: 'pending' },
     ];
 
     setSteps(pipelineSteps);
-    setRunning(true);
 
-    for (let i = 0; i < pipelineSteps.length; i++) {
-      await new Promise(r => setTimeout(r, 800 + Math.random() * 600));
-      setSteps(prev => prev.map((s, j) => ({
-        ...s,
-        status: j < i ? 'done' : j === i ? 'active' : 'pending',
-      })));
-      await new Promise(r => setTimeout(r, 400));
-      setSteps(prev => prev.map((s, j) => ({
-        ...s,
-        status: j <= i ? 'done' : j === i + 1 ? 'active' : 'pending',
-      })));
+    // Animate first 2 steps
+    for (let i = 0; i < 2; i++) {
+      await new Promise(r => setTimeout(r, 600));
+      setSteps(prev => prev.map((s, j) => ({ ...s, status: j <= i ? 'done' : j === i + 1 ? 'active' : 'pending' })));
+    }
+
+    // Call edge function
+    try {
+      const { data, error } = await supabase.functions.invoke('fire-trigger', {
+        body: { zone_id: selectedZone, trigger_type: selectedTrigger, severity: severity[0] },
+      });
+
+      if (error) throw error;
+
+      // Animate remaining steps with real data
+      await new Promise(r => setTimeout(r, 500));
+      setSteps(prev => prev.map((s, j) => {
+        if (j === 2) return { ...s, status: 'done', detail: `${data.claims_created} claims initiated` };
+        if (j === 3) return { ...s, status: 'active' };
+        return s;
+      }));
+
+      await new Promise(r => setTimeout(r, 700));
+      setSteps(prev => prev.map((s, j) => {
+        if (j === 3) return { ...s, status: 'done' };
+        if (j === 4) return { ...s, status: 'done', detail: `${data.approved} approved, ${data.flagged} flagged` };
+        if (j === 5) return { ...s, status: 'active' };
+        return s;
+      }));
+
+      await new Promise(r => setTimeout(r, 500));
+      setSteps(prev => prev.map((s, j) => {
+        if (j === 5) return { ...s, status: 'done', detail: `₹${data.total_disbursed?.toLocaleString()} disbursed to ${data.payouts_created} workers` };
+        return { ...s, status: 'done' };
+      }));
+
+      toast.success(`Trigger complete! ${data.claims_created} claims, ₹${data.total_disbursed?.toLocaleString()} disbursed`);
+    } catch (e: any) {
+      toast.error(e.message || 'Trigger failed');
+      setSteps(prev => prev.map(s => s.status === 'pending' || s.status === 'active' ? { ...s, status: 'done', detail: 'Error: ' + (e.message || 'Failed') } : s));
     }
 
     setRunning(false);
@@ -84,7 +131,7 @@ export default function DemoTriggerPanel() {
               <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
                 <SelectTrigger><SelectValue placeholder="Choose trigger" /></SelectTrigger>
                 <SelectContent>
-                  {triggerTypes.map(t => (
+                  {triggerTypeOptions.map(t => (
                     <SelectItem key={t.id} value={t.id}>{t.icon} {t.label}</SelectItem>
                   ))}
                 </SelectContent>

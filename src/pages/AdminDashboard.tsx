@@ -1,25 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
-import {
-  mockAdminStats, mockClaimsData, mockFraudAlerts, mockPredictions,
-  mockFinancials, zones, triggerTypes
-} from '@/lib/mock-data';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { mockFinancials } from '@/lib/mock-data';
 import { useLanguage } from '@/lib/language-context';
+import { useAuth } from '@/lib/auth-context';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import type { Tables } from '@/integrations/supabase/types';
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: 'Overview', id: 'overview' },
@@ -33,9 +34,41 @@ const sidebarItems = [
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const stats = mockAdminStats;
+  const [stats, setStats] = useState({ totalWorkers: 0, activePolicies: 0, claimsThisWeek: 0, lossRatio: 0, totalPremium: 0, totalClaims: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [workersRes, policiesRes, claimsRes] = await Promise.all([
+        supabase.from('workers').select('id', { count: 'exact', head: true }),
+        supabase.from('policies').select('id, premium', { count: 'exact' }).eq('status', 'active'),
+        supabase.from('claims').select('id, amount, status, created_at'),
+      ]);
+
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const weekClaims = (claimsRes.data || []).filter(c => c.created_at > weekAgo);
+      const totalClaimAmt = (claimsRes.data || []).reduce((s, c) => s + Number(c.amount), 0);
+      const totalPremium = (policiesRes.data || []).reduce((s, p) => s + Number(p.premium), 0);
+
+      setStats({
+        totalWorkers: workersRes.count || 0,
+        activePolicies: policiesRes.count || 0,
+        claimsThisWeek: weekClaims.length,
+        lossRatio: totalPremium > 0 ? Math.round((totalClaimAmt / totalPremium) * 100) : 0,
+        totalPremium,
+        totalClaims: totalClaimAmt,
+      });
+    };
+    fetchStats();
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -73,7 +106,6 @@ export default function AdminDashboard() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card shrink-0">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -89,9 +121,9 @@ export default function AdminDashboard() {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-destructive" />
             </Button>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
-            </div>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </header>
 
@@ -113,10 +145,29 @@ export default function AdminDashboard() {
   );
 }
 
-function OverviewTab({ stats }: { stats: typeof mockAdminStats }) {
+function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies: number; claimsThisWeek: number; lossRatio: number } }) {
+  const [predictions, setPredictions] = useState<any[]>([]);
+  const [loadingPredictions, setLoadingPredictions] = useState(false);
+
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      setLoadingPredictions(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-predict', {
+          body: { type: 'zone_predictions' },
+        });
+        if (data?.predictions) setPredictions(data.predictions);
+      } catch (e) {
+        console.error('Predictions error:', e);
+      }
+      setLoadingPredictions(false);
+    };
+    fetchPredictions();
+  }, []);
+
   const kpis = [
-    { label: 'Active Workers', value: stats.totalWorkers.toLocaleString(), change: `+${stats.workerGrowth}%`, icon: User, positive: true },
-    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: Shield, positive: true },
+    { label: 'Active Workers', value: stats.totalWorkers.toLocaleString(), icon: User },
+    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: Shield },
     { label: 'Claims This Week', value: stats.claimsThisWeek.toString(), icon: FileText },
     { label: 'Loss Ratio', value: `${stats.lossRatio}%`, icon: TrendingUp, positive: stats.lossRatio < 70 },
   ];
@@ -130,11 +181,6 @@ function OverviewTab({ stats }: { stats: typeof mockAdminStats }) {
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <kpi.icon className="w-5 h-5 text-muted-foreground" />
-                  {kpi.change && (
-                    <Badge variant="outline" className={kpi.positive ? 'text-secondary border-secondary/20 bg-secondary/5' : 'text-destructive border-destructive/20 bg-destructive/5'}>
-                      {kpi.change}
-                    </Badge>
-                  )}
                 </div>
                 <p className="font-display text-2xl font-bold">{kpi.value}</p>
                 <p className="text-sm text-muted-foreground">{kpi.label}</p>
@@ -147,27 +193,11 @@ function OverviewTab({ stats }: { stats: typeof mockAdminStats }) {
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="text-base font-display">Claims Heatmap (This Week)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={mockClaimsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
-                <Bar dataKey="claims" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-base font-display">Next Week Predictions</CardTitle>
+            <CardTitle className="text-base font-display">AI-Powered Next Week Predictions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mockPredictions.map((pred) => (
+            {loadingPredictions && <p className="text-sm text-muted-foreground animate-pulse">🤖 AI analyzing zone data...</p>}
+            {predictions.map((pred: any) => (
               <div key={pred.city} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div>
                   <p className="font-medium text-sm">{pred.city}</p>
@@ -177,10 +207,22 @@ function OverviewTab({ stats }: { stats: typeof mockAdminStats }) {
                   <Badge className={pred.probability > 60 ? 'bg-destructive/10 text-destructive border-destructive/20' : pred.probability > 30 ? 'bg-accent/10 text-accent border-accent/20' : 'bg-secondary/10 text-secondary border-secondary/20'} variant="outline">
                     {pred.probability}% chance
                   </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">Est: ₹{(pred.estClaims / 1000).toFixed(0)}K</p>
+                  <p className="text-xs text-muted-foreground mt-1">Est: ₹{(pred.estimated_claims_inr / 1000).toFixed(0)}K</p>
                 </div>
               </div>
             ))}
+            {!loadingPredictions && predictions.length === 0 && (
+              <p className="text-sm text-muted-foreground">No predictions available yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base font-display">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">Use the Demo Trigger panel to simulate weather events and test the claim pipeline end-to-end.</p>
           </CardContent>
         </Card>
       </div>
@@ -189,21 +231,44 @@ function OverviewTab({ stats }: { stats: typeof mockAdminStats }) {
 }
 
 function ClaimsTab() {
+  const [claims, setClaims] = useState<any[]>([]);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      let query = supabase.from('claims').select(`
+        *,
+        policies!inner(worker_id, tier, workers!inner(name, zone_id, zones(name)))
+      `).order('created_at', { ascending: false }).limit(50);
+
+      if (filter !== 'all') {
+        query = query.eq('status', filter as "approved" | "processing" | "flagged" | "rejected");
+      }
+
+      const { data } = await query;
+      setClaims(data || []);
+    };
+    fetchClaims();
+  }, [filter]);
+
+  const counts = { all: claims.length, approved: 0, processing: 0, flagged: 0 };
+  claims.forEach(c => { if (c.status in counts) counts[c.status as keyof typeof counts]++; });
+
   return (
     <Card className="shadow-card">
       <CardHeader>
         <CardTitle className="font-display">Claims Management</CardTitle>
-        <CardDescription>Auto-approved, pending, and flagged claims</CardDescription>
+        <CardDescription>Real-time claims from the database</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="all">
+        <Tabs value={filter} onValueChange={setFilter}>
           <TabsList>
-            <TabsTrigger value="all">All (342)</TabsTrigger>
-            <TabsTrigger value="approved">Approved (310)</TabsTrigger>
-            <TabsTrigger value="pending">Pending (24)</TabsTrigger>
-            <TabsTrigger value="flagged">Flagged (8)</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="processing">Processing</TabsTrigger>
+            <TabsTrigger value="flagged">Flagged</TabsTrigger>
           </TabsList>
-          <TabsContent value="all" className="mt-4">
+          <TabsContent value={filter} className="mt-4">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -216,21 +281,18 @@ function ClaimsTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[
-                  { worker: 'Raju K.', zone: 'Mumbai-Andheri', trigger: '🌧️ Heavy Rain', amount: 600, fraud: 0.08, status: 'approved' },
-                  { worker: 'Priya S.', zone: 'Mumbai-Bandra', trigger: '🌧️ Heavy Rain', amount: 600, fraud: 0.92, status: 'flagged' },
-                  { worker: 'Amit D.', zone: 'Delhi-CP', trigger: '😷 AQI Severe', amount: 400, fraud: 0.15, status: 'approved' },
-                  { worker: 'Neha R.', zone: 'Chennai-Anna', trigger: '🌀 Cyclone', amount: 600, fraud: 0.05, status: 'approved' },
-                  { worker: 'Vikram L.', zone: 'Mumbai-Powai', trigger: '🌧️ Heavy Rain', amount: 450, fraud: 0.34, status: 'pending' },
-                ].map((row, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{row.worker}</TableCell>
-                    <TableCell>{row.zone}</TableCell>
-                    <TableCell>{row.trigger}</TableCell>
-                    <TableCell>₹{row.amount}</TableCell>
+                {claims.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No claims yet. Use the Demo Trigger to simulate events.</TableCell></TableRow>
+                )}
+                {claims.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{(row as any).policies?.workers?.name || 'Unknown'}</TableCell>
+                    <TableCell>{(row as any).policies?.workers?.zones?.name || 'N/A'}</TableCell>
+                    <TableCell>{row.trigger_type}</TableCell>
+                    <TableCell>₹{Number(row.amount)}</TableCell>
                     <TableCell>
-                      <span className={row.fraud > 0.5 ? 'text-destructive font-bold' : row.fraud > 0.2 ? 'text-accent' : 'text-secondary'}>
-                        {(row.fraud * 100).toFixed(0)}%
+                      <span className={row.fraud_score > 0.5 ? 'text-destructive font-bold' : row.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}>
+                        {(row.fraud_score * 100).toFixed(0)}%
                       </span>
                     </TableCell>
                     <TableCell>
@@ -258,49 +320,13 @@ function FraudTab() {
     <div className="space-y-6">
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="font-display">Fraud Alerts</CardTitle>
-          <CardDescription>Anomaly detection and flagged workers</CardDescription>
+          <CardTitle className="font-display">Fraud Detection</CardTitle>
+          <CardDescription>Claims flagged by the multi-layer fraud engine</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Worker</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Zone</TableHead>
-                <TableHead>Anomaly Score</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockFraudAlerts.map((alert) => (
-                <TableRow key={alert.workerId}>
-                  <TableCell className="font-medium">{alert.name} ({alert.workerId})</TableCell>
-                  <TableCell>{alert.type}</TableCell>
-                  <TableCell>{alert.zone}</TableCell>
-                  <TableCell>
-                    <span className={alert.score > 0.7 ? 'text-destructive font-bold' : 'text-accent'}>
-                      {(alert.score * 100).toFixed(0)}%
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={
-                      alert.severity === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                      alert.severity === 'medium' ? 'bg-accent/10 text-accent border-accent/20' :
-                      'bg-muted text-muted-foreground'
-                    }>
-                      {alert.severity}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{alert.timestamp}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <FlaggedClaimsTable />
         </CardContent>
       </Card>
-
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="font-display">Network Fraud Detection</CardTitle>
@@ -314,16 +340,69 @@ function FraudTab() {
   );
 }
 
+function FlaggedClaimsTable() {
+  const [flagged, setFlagged] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('claims').select('*, policies!inner(workers!inner(name, zone_id))')
+      .eq('status', 'flagged')
+      .order('fraud_score', { ascending: false })
+      .limit(20)
+      .then(({ data }) => setFlagged(data || []));
+  }, []);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Worker</TableHead>
+          <TableHead>Trigger</TableHead>
+          <TableHead>Fraud Score</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Date</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {flagged.length === 0 && (
+          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No flagged claims</TableCell></TableRow>
+        )}
+        {flagged.map((c) => (
+          <TableRow key={c.id}>
+            <TableCell className="font-medium">{(c as any).policies?.workers?.name || 'Unknown'}</TableCell>
+            <TableCell>{c.trigger_type}</TableCell>
+            <TableCell><span className="text-destructive font-bold">{(c.fraud_score * 100).toFixed(0)}%</span></TableCell>
+            <TableCell>₹{Number(c.amount)}</TableCell>
+            <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function AnalyticsTab() {
+  const [predictions, setPredictions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.functions.invoke('ai-predict', { body: { type: 'zone_predictions' } })
+      .then(({ data }) => {
+        if (data?.predictions) setPredictions(data.predictions);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <div className="space-y-6">
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="font-display">Predictive Analytics — Next Week</CardTitle>
+          <CardTitle className="font-display">AI Predictive Analytics — Next Week</CardTitle>
         </CardHeader>
         <CardContent>
+          {loading && <p className="text-muted-foreground animate-pulse">🤖 Generating predictions...</p>}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockPredictions.map((pred) => (
+            {predictions.map((pred: any) => (
               <Card key={pred.city} className={pred.probability > 60 ? 'border-destructive/30 bg-destructive/5' : ''}>
                 <CardContent className="p-4 text-center">
                   <p className="font-display font-bold text-lg">{pred.city}</p>
@@ -332,8 +411,8 @@ function AnalyticsTab() {
                   </p>
                   <p className="text-xs text-muted-foreground">{pred.event}</p>
                   <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-                    <p>Est. claims: ₹{(pred.estClaims / 100000).toFixed(1)}L</p>
-                    <p>Reserve: ₹{(pred.reserve / 100000).toFixed(1)}L</p>
+                    <p>Est. claims: ₹{((pred.estimated_claims_inr || 0) / 100000).toFixed(1)}L</p>
+                    <p>Reserve: ₹{((pred.reserve_needed_inr || 0) / 100000).toFixed(1)}L</p>
                   </div>
                 </CardContent>
               </Card>
