@@ -190,7 +190,7 @@ export default function PredictionsPage() {
                       <p className="text-[10px] text-muted-foreground">Disruptions</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/5 text-center">
-                      <p className="font-display font-bold text-xl text-accent">₹{(totalEstClaims / 1000).toFixed(0)}K</p>
+                      <p className="font-display font-bold text-xl text-accent">₹{totalEstClaims < 1000 ? totalEstClaims : `${(totalEstClaims / 1000).toFixed(1)}K`}</p>
                       <p className="text-[10px] text-muted-foreground">Est. Claims</p>
                     </div>
                   </div>
@@ -320,8 +320,8 @@ export default function PredictionsPage() {
                           <Calendar className="w-3 h-3" />Peak: {forecast.peak_risk_day}
                         </span>
                       )}
-                      {forecast.estimated_claims_inr && (
-                        <span>₹{(forecast.estimated_claims_inr / 1000).toFixed(0)}K est.</span>
+                      {forecast.estimated_claims_inr != null && forecast.estimated_claims_inr > 0 && (
+                        <span>₹{forecast.estimated_claims_inr < 1000 ? forecast.estimated_claims_inr : `${(forecast.estimated_claims_inr / 1000).toFixed(1)}K`} est.</span>
                       )}
                     </div>
 
