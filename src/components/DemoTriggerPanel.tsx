@@ -74,7 +74,9 @@ export default function DemoTriggerPanel() {
 
       // Animate remaining steps with real data
       await new Promise(r => setTimeout(r, 500));
+      const eligibility = data.eligibility || {};
       setSteps(prev => prev.map((s, j) => {
+        if (j === 1) return { ...s, status: 'done', detail: `${eligibility.registered_workers || 0} registered + ${eligibility.gps_nearby_workers || 0} GPS-nearby (${eligibility.gps_radius_km || 10}km radius)` };
         if (j === 2) return { ...s, status: 'done', detail: `${data.claims_created} claims initiated` };
         if (j === 3) return { ...s, status: 'active' };
         return s;
