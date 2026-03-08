@@ -31,6 +31,14 @@ const COLORS = [
   'hsl(0, 84%, 60%)', 'hsl(280, 60%, 55%)', 'hsl(190, 70%, 45%)',
 ];
 
+// Recharts SVG fill doesn't resolve CSS vars; use actual HSL values
+const CHART_COLORS = {
+  secondary: 'hsl(160, 84%, 39%)',
+  destructive: 'hsl(0, 84%, 60%)',
+  accent: 'hsl(38, 92%, 50%)',
+  primary: 'hsl(221, 83%, 53%)',
+};
+
 export default function CohortAnalyticsTab() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -199,8 +207,8 @@ export default function CohortAnalyticsTab() {
                         formatter={(v: number) => `${v}%`}
                       />
                       <Legend />
-                      <Bar dataKey="retentionRate" name="Retention %" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="churnRate" name="Churn %" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="retentionRate" name="Retention %" fill={CHART_COLORS.secondary} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="churnRate" name="Churn %" fill={CHART_COLORS.destructive} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -223,7 +231,7 @@ export default function CohortAnalyticsTab() {
                         contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
                         formatter={(v: number) => `${v}%`}
                       />
-                      <Bar dataKey="renewalRate" name="Renewal %" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="renewalRate" name="Renewal %" fill={CHART_COLORS.accent} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -272,7 +280,7 @@ export default function CohortAnalyticsTab() {
                         contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
                         formatter={(v: number) => `₹${v}/week`}
                       />
-                      <Bar dataKey="avgPremium" name="Avg Premium" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="avgPremium" name="Avg Premium" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
