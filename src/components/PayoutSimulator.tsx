@@ -34,7 +34,10 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
     const timers = [
       setTimeout(() => setStage('verifying'), 1200),
       setTimeout(() => setStage('processing'), 2400),
-      setTimeout(() => setStage('completed'), 4000),
+      setTimeout(() => {
+        setStage('completed');
+        sendMockWhatsAppPayout(amount);
+      }, 4000),
     ];
 
     return () => timers.forEach(clearTimeout);
