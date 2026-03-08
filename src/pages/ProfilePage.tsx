@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendMockWhatsAppPremiumPaid, sendMockWhatsAppPlanChanged } from '@/lib/whatsapp-mock';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 
