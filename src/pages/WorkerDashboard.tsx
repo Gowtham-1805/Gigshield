@@ -207,7 +207,7 @@ export default function WorkerDashboard() {
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-xs opacity-80">{t('activePlan')}</p>
+                    <p className="text-xs opacity-80">Active Plan</p>
                     <p className="font-display font-bold text-lg">{policy.tier}</p>
                   </div>
                   <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
