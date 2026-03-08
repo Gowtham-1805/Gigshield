@@ -7,6 +7,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Haversine distance in km
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const GPS_RADIUS_KM = 10; // Workers within 10km of zone center are eligible
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -31,6 +43,10 @@ serve(async (req) => {
     const { zone_id, trigger_type, severity } = await req.json();
     if (!zone_id || !trigger_type) throw new Error("zone_id and trigger_type are required");
 
+    // Get zone coordinates for GPS proximity check
+    const { data: zone } = await supabase.from("zones").select("lat, lng, name, city").eq("id", zone_id).single();
+    if (!zone) throw new Error("Zone not found");
+
     // Step 1: Create incident
     const { data: incident, error: incErr } = await supabase
       .from("incidents")
@@ -45,15 +61,36 @@ serve(async (req) => {
       .single();
     if (incErr) throw incErr;
 
-    // Step 2: Find active policies for workers in this zone
-    const { data: workers } = await supabase
+    // Step 2: Find eligible workers — registered in zone OR GPS within radius
+    const { data: registeredWorkers } = await supabase
       .from("workers")
-      .select("id, weekly_earnings, shield_score, name, platform")
+      .select("id, weekly_earnings, shield_score, name, platform, zone_id, last_lat, last_lng, last_location_at")
       .eq("zone_id", zone_id);
+
+    // Also find workers with recent GPS in this zone (within 1 hour)
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { data: allWorkersWithGps } = await supabase
+      .from("workers")
+      .select("id, weekly_earnings, shield_score, name, platform, zone_id, last_lat, last_lng, last_location_at")
+      .not("last_lat", "is", null)
+      .not("last_lng", "is", null)
+      .gte("last_location_at", oneHourAgo)
+      .neq("zone_id", zone_id); // Exclude already-registered workers
+
+    // Filter GPS workers by proximity
+    const gpsEligibleWorkers = (allWorkersWithGps || []).filter(w => {
+      if (!w.last_lat || !w.last_lng) return false;
+      const dist = haversineKm(zone.lat, zone.lng, w.last_lat, w.last_lng);
+      return dist <= GPS_RADIUS_KM;
+    });
+
+    const workers = [...(registeredWorkers || []), ...gpsEligibleWorkers];
 
     if (!workers || workers.length === 0) {
       return new Response(JSON.stringify({
-        incident, claims_created: 0, payouts_created: 0, message: "No workers in this zone",
+        incident, claims_created: 0, payouts_created: 0,
+        message: "No workers in this zone (registered or GPS-nearby)",
+        gps_checked: (allWorkersWithGps || []).length,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -68,7 +105,11 @@ serve(async (req) => {
 
     if (!policies || policies.length === 0) {
       return new Response(JSON.stringify({
-        incident, claims_created: 0, payouts_created: 0, message: "No active policies in this zone",
+        incident, claims_created: 0, payouts_created: 0,
+        message: "No active policies for eligible workers",
+        workers_found: workers.length,
+        registered: (registeredWorkers || []).length,
+        gps_nearby: gpsEligibleWorkers.length,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -113,12 +154,13 @@ serve(async (req) => {
       return true;
     });
 
-    // Step 4: AI Anomaly Detection (Layer 3) — batch score all eligible claims
+    // Step 4: AI Anomaly Detection
     let aiAnomalyScores: Record<string, { score: number; reason: string }> = {};
     if (LOVABLE_API_KEY && eligiblePolicies.length > 0) {
       try {
         const claimProfiles = eligiblePolicies.map((p) => {
           const w = workerMap[p.worker_id];
+          const isGpsWorker = w?.zone_id !== zone_id;
           return {
             policy_id: p.id,
             worker_name: w?.name || "Unknown",
@@ -128,6 +170,10 @@ serve(async (req) => {
             recent_claim_count: claimCountByPolicy[p.id] || 0,
             recent_claim_total: claimTotalByPolicy[p.id] || 0,
             tier: p.tier,
+            claim_method: isGpsWorker ? "gps_proximity" : "registered_zone",
+            gps_distance_km: isGpsWorker && w?.last_lat && w?.last_lng
+              ? haversineKm(zone.lat, zone.lng, w.last_lat, w.last_lng).toFixed(2)
+              : "0",
           };
         });
 
@@ -142,7 +188,7 @@ serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `You are GigShield's fraud anomaly detection AI. Analyze each worker's claim profile and assign an anomaly score (0.0 = normal, 1.0 = highly anomalous). Consider: claim frequency vs zone peers, claim amounts vs weekly earnings, shield score, and unusual patterns. Workers with many recent claims, low shield scores, or claim amounts exceeding their typical earnings are more anomalous.`,
+                content: `You are GigShield's fraud anomaly detection AI. Analyze each worker's claim profile and assign an anomaly score (0.0 = normal, 1.0 = highly anomalous). Consider: claim frequency vs zone peers, claim amounts vs weekly earnings, shield score, unusual patterns, and GPS-based claims (workers not registered in the zone but nearby via GPS get slightly higher scrutiny).`,
               },
               {
                 role: "user",
@@ -195,7 +241,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 5: Build claims with AI anomaly scores + 120% earnings check
+    // Step 5: Build claims with GPS validation info
     const claimInserts = eligiblePolicies.map((p) => {
       const tierMultiplier = p.tier === "PRO" ? 1.2 : p.tier === "STANDARD" ? 1.0 : 0.8;
       const amount = Math.min(
@@ -205,22 +251,23 @@ serve(async (req) => {
 
       const w = workerMap[p.worker_id];
       const weeklyEarnings = Number(w?.weekly_earnings || 0);
+      const isGpsWorker = w?.zone_id !== zone_id;
+      const gpsDistance = isGpsWorker && w?.last_lat && w?.last_lng
+        ? haversineKm(zone.lat, zone.lng, w.last_lat, w.last_lng)
+        : 0;
 
-      // Layer 3: AI anomaly score (fallback to heuristic if AI unavailable)
       const aiScore = aiAnomalyScores[p.id];
       const anomalyScore = aiScore
         ? aiScore.score
         : Math.min(1, (claimCountByPolicy[p.id] || 0) * 0.15 + Math.random() * 0.1);
 
-      // Layer 4 extra: 120% earnings check
       const earningsExceeded = weeklyEarnings > 0 && amount > weeklyEarnings * 1.2;
-
-      // Combined fraud score
       const baseFraudScore = anomalyScore;
       const earningsPenalty = earningsExceeded ? 0.3 : 0;
-      const fraudScore = Math.min(1, baseFraudScore + earningsPenalty);
+      // GPS workers get slight extra scrutiny if far from zone center
+      const gpsPenalty = isGpsWorker ? Math.min(0.1, gpsDistance * 0.01) : 0;
+      const fraudScore = Math.min(1, baseFraudScore + earningsPenalty + gpsPenalty);
 
-      // Determine status
       let status: string;
       if (fraudScore > 0.7) status = "flagged";
       else if (fraudScore > 0.5 || earningsExceeded) status = "flagged";
@@ -237,6 +284,9 @@ serve(async (req) => {
         status,
         fraud_details: {
           gps_match: true,
+          gps_method: isGpsWorker ? "proximity" : "registered_zone",
+          gps_distance_km: parseFloat(gpsDistance.toFixed(2)),
+          gps_radius_km: GPS_RADIUS_KM,
           weather_confirmed: true,
           velocity_ok: velocityOk,
           duplicate_check: "passed",
@@ -257,7 +307,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         incident, claims_created: 0, payouts_created: 0,
         skipped_duplicates: alreadyClaimedPolicyIds.size,
-        skipped_velocity: policies.length - eligiblePolicies.length - alreadyClaimedPolicyIds.size,
         message: "All policies filtered by duplicate/velocity checks",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -304,6 +353,12 @@ serve(async (req) => {
       flagged: (claims?.length || 0) - approvedClaims.length,
       payouts_created: payouts.length,
       total_disbursed: totalDisbursed,
+      eligibility: {
+        registered_workers: (registeredWorkers || []).length,
+        gps_nearby_workers: gpsEligibleWorkers.length,
+        total_eligible: workers.length,
+        gps_radius_km: GPS_RADIUS_KM,
+      },
       fraud_engine: {
         ai_anomaly_detection: Object.keys(aiAnomalyScores).length > 0 ? "ai_powered" : "heuristic_fallback",
         earnings_checks_run: eligiblePolicies.length,
