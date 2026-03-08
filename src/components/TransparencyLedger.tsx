@@ -69,6 +69,8 @@ export default function TransparencyLedger({ workerId, isAdmin = false }: Transp
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState('all');
+  const [approvedSub, setApprovedSub] = useState<'all' | 'paid' | 'unpaid'>('all');
 
   useEffect(() => {
     const fetchLedger = async () => {
