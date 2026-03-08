@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
+import WorkerReportPanel from '@/components/WorkerReportPanel';
 import { useAuth } from '@/lib/auth-context';
 import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
