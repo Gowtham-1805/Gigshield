@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.ai-predict]
 verify_jwt = false
+
+[functions.weather-poll]
+verify_jwt = false
+
+[functions.calculate-premium]
+verify_jwt = false
