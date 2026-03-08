@@ -179,13 +179,16 @@ function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies:
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpis.map((kpi, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <Card className="shadow-card">
-              <CardContent className="p-5">
+            <Card className="shadow-card hover:shadow-elevated transition-all duration-300 border-border/50 overflow-hidden relative group">
+              <div className="absolute inset-0 gradient-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-5 relative">
                 <div className="flex items-center justify-between mb-3">
-                  <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+                  <div className={`w-10 h-10 rounded-xl ${kpi.color === 'text-primary' ? 'bg-primary/10' : kpi.color === 'text-secondary' ? 'bg-secondary/10' : kpi.color === 'text-accent' ? 'bg-accent/10' : 'bg-destructive/10'} flex items-center justify-center`}>
+                    <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+                  </div>
                 </div>
                 <p className="font-display text-2xl font-bold">{kpi.value}</p>
-                <p className="text-sm text-muted-foreground">{kpi.label}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{kpi.label}</p>
               </CardContent>
             </Card>
           </motion.div>
