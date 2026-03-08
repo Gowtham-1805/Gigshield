@@ -221,7 +221,7 @@ export default function TransparencyLedger({ workerId, isAdmin = false }: Transp
         />
       </div>
 
-      {/* Ledger Table */}
+      {/* Ledger Table with Tabs */}
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="font-display flex items-center gap-2">
@@ -233,76 +233,53 @@ export default function TransparencyLedger({ workerId, isAdmin = false }: Transp
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Trigger</TableHead>
-                <TableHead>Zone</TableHead>
-                {isAdmin && <TableHead>Worker</TableHead>}
-                <TableHead>Claim</TableHead>
-                <TableHead>Payout</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
-                    No transactions recorded yet
-                  </TableCell>
-                </TableRow>
-              )}
-              {filtered.map((entry) => {
-                const cStatus = claimStatusConfig[entry.claim.status] || claimStatusConfig.processing;
-                const pStatus = entry.payout ? payoutStatusConfig[entry.payout.status] : null;
+          <Tabs value={tab} onValueChange={(v) => { setTab(v); setApprovedSub('all'); }}>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <TabsList>
+                <TabsTrigger value="all">All ({entries.length})</TabsTrigger>
+                <TabsTrigger value="approved">
+                  Approved ({entries.filter(e => e.claim.status === 'approved').length})
+                </TabsTrigger>
+                <TabsTrigger value="processing">
+                  Processing ({entries.filter(e => e.claim.status === 'processing').length})
+                </TabsTrigger>
+                <TabsTrigger value="flagged">
+                  Flagged ({entries.filter(e => e.claim.status === 'flagged').length})
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-                return (
-                  <TableRow
-                    key={entry.claim.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setSelected(entry)}
-                  >
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {format(new Date(entry.incident.created_at), 'dd MMM, HH:mm')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span>{triggerIcons[entry.incident.trigger_type] || '⚡'}</span>
-                        <span className="text-xs font-medium">{entry.incident.trigger_type.replace(/_/g, ' ')}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{entry.incident.zone_name}</TableCell>
-                    {isAdmin && <TableCell className="text-sm font-medium">{entry.claim.worker_name}</TableCell>}
-                    <TableCell className="font-medium">₹{entry.claim.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      {entry.payout ? (
-                        <span className="font-medium">₹{entry.payout.amount.toLocaleString()}</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className={`text-[10px] ${cStatus.bg} ${cStatus.color}`}>
-                          {entry.claim.status}
-                        </Badge>
-                        {pStatus && (
-                          <Badge variant="outline" className={`text-[10px] ${pStatus.bg} ${pStatus.color}`}>
-                            {pStatus.label}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+            {/* Approved sub-filters */}
+            {tab === 'approved' && (
+              <div className="flex items-center gap-2 mb-4">
+                {(['all', 'paid', 'unpaid'] as const).map((sub) => {
+                  const count = sub === 'all'
+                    ? entries.filter(e => e.claim.status === 'approved').length
+                    : sub === 'paid'
+                    ? entries.filter(e => e.claim.status === 'approved' && e.payout?.status === 'completed').length
+                    : entries.filter(e => e.claim.status === 'approved' && (!e.payout || e.payout.status !== 'completed')).length;
+                  return (
+                    <Badge
+                      key={sub}
+                      variant={approvedSub === sub ? 'default' : 'outline'}
+                      className={`cursor-pointer transition-colors ${
+                        approvedSub === sub
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setApprovedSub(sub)}
+                    >
+                      {sub === 'all' ? 'All' : sub === 'paid' ? '💰 Paid' : '⏳ Unpaid'} ({count})
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+
+            <TabsContent value={tab} className="mt-0">
+              <LedgerTable entries={filtered} isAdmin={isAdmin} onSelect={setSelected} />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
