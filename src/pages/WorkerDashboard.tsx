@@ -292,9 +292,11 @@ export default function WorkerDashboard() {
           <Button className="gradient-shield text-primary-foreground border-0 h-12">
             {t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}
           </Button>
-          <Button variant="outline" className="h-12">
-            {t('claimHistory')}
-          </Button>
+          <Link to="/claims">
+            <Button variant="outline" className="h-12 w-full">
+              {t('claimHistory')}
+            </Button>
+          </Link>
         </div>
       </main>
 
