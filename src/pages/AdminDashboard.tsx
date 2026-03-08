@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { mockFinancials } from '@/lib/mock-data';
 import { useAuth } from '@/lib/auth-context';
 import AdminZoneMap from '@/components/AdminZoneMap';
-import FraudNetworkGraph from '@/components/FraudNetworkGraph';
+
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
 import TransparencyLedger from '@/components/TransparencyLedger';
