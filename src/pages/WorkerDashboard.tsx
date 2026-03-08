@@ -123,8 +123,18 @@ export default function WorkerDashboard() {
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
-  const handleRenew = async () => {
+  const startRenewPayment = () => {
     if (!policy) return;
+    setRenewTxnId(`GS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`);
+    setRenewPayStage('initiating');
+    setTimeout(() => setRenewPayStage('verifying'), 1000);
+    setTimeout(() => setRenewPayStage('processing'), 2200);
+    setTimeout(() => setRenewPayStage('completed'), 3500);
+  };
+
+  const handleRenewAfterPay = async () => {
+    if (!policy) return;
+    setRenewPayStage('idle');
     setRenewing(true);
     try {
       const { data, error } = await supabase.functions.invoke('renew-policy', { body: { policy_id: policy.id } });
@@ -137,6 +147,14 @@ export default function WorkerDashboard() {
       setPolicy(newPol);
     } catch (e: any) { toast.error(e.message || 'Renewal failed'); }
     setRenewing(false);
+  };
+
+  const renewStageConfig: Record<string, { icon: string; label: string; color: string }> = {
+    idle: { icon: '', label: '', color: '' },
+    initiating: { icon: '🔐', label: 'Initiating UPI payment...', color: 'text-primary' },
+    verifying: { icon: '🔍', label: 'Verifying renewal details...', color: 'text-accent' },
+    processing: { icon: '💸', label: `Processing ₹${policy ? Number(policy.premium) : 0} via UPI...`, color: 'text-secondary' },
+    completed: { icon: '✅', label: 'Payment Successful!', color: 'text-secondary' },
   };
 
   const navItems = [
