@@ -156,9 +156,12 @@ serve(async (req) => {
         };
       });
 
+      const validZoneIds = new Set((zones || []).map(z => z.id));
+      const validZoneNames = (zones || []).map(z => z.name);
       const totalClaims30d = (recentClaims || []).length;
       const totalClaimAmount = (recentClaims || []).reduce((s, c) => s + Number(c.amount), 0);
       const cityLabel = city || "all cities";
+      const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -171,11 +174,11 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are GigShield's weather risk AI. Analyze zone-level weather data, incident history, and risk scores to produce detailed 7-day forecasts ONLY for ${cityLabel}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). Be specific about timing and severity. The platform_summary MUST only discuss ${cityLabel} zones.`,
+              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}. Estimated claims per zone should be realistic for gig workers — typically ₹500-₹2500 per zone per week based on average claim of ₹${avgClaimAmount}.`,
             },
             {
               role: "user",
-              content: `Analyze these ${cityLabel} zones with their weather readings and incident history:\n${JSON.stringify(zoneDetails)}\n\nPlatform stats: ${totalClaims30d} claims totaling ₹${totalClaimAmount} in last 30 days.\n\nProvide detailed 7-day disruption forecasts per zone for ${cityLabel} only.`,
+              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above.`,
             },
           ],
           tools: [
@@ -252,9 +255,21 @@ serve(async (req) => {
 
       const aiResult = await response.json();
       const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-      const result = toolCall ? JSON.parse(toolCall.function.arguments) : { forecasts: [], platform_summary: "" };
+      const rawResult = toolCall ? JSON.parse(toolCall.function.arguments) : { forecasts: [], platform_summary: "" };
 
-      return new Response(JSON.stringify(result), {
+      // Post-filter: only keep forecasts for valid zone IDs that exist in DB
+      const filteredForecasts = (rawResult.forecasts || []).filter(
+        (f: any) => validZoneIds.has(f.zone_id)
+      ).map((f: any) => ({
+        ...f,
+        // Cap estimated claims to realistic range per zone (max ₹5000/week)
+        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
+      }));
+
+      return new Response(JSON.stringify({
+        forecasts: filteredForecasts,
+        platform_summary: rawResult.platform_summary || "",
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
