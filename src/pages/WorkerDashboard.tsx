@@ -284,7 +284,7 @@ export default function WorkerDashboard() {
                   {weatherAlert.icon}
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
+                  <p className="font-display font-semibold text-sm">Weather Alert</p>
                   <p className="text-sm text-muted-foreground mt-1">{weatherAlert.text}</p>
                 </div>
               </CardContent>
