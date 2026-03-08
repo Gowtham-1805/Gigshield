@@ -31,29 +31,37 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch worker data, zone risk, and claim history
+    // Fetch worker data, zone risk, and claim history (last 4 weeks per blueprint)
+    const fourWeeksAgo = new Date(Date.now() - 28 * 86400000).toISOString();
     const [workerRes, zoneRes, claimsRes] = await Promise.all([
       supabase.from("workers").select("*").eq("id", worker_id).single(),
       supabase.from("zones").select("*").eq("id", zone_id).single(),
       supabase.from("claims").select("id, amount, status, created_at")
-        .eq("policy_id", worker_id) // approximate - will be improved
-        .gte("created_at", new Date(Date.now() - 90 * 86400000).toISOString()),
+        .eq("policy_id", worker_id) // approximate
+        .gte("created_at", fourWeeksAgo),
     ]);
 
     const worker = workerRes.data;
     const zone = zoneRes.data;
 
-    // Calculate base premium factors
-    const baseRates = { BASIC: 39, STANDARD: 64, PRO: 99 };
-    const zoneRiskMultiplier = zone ? 0.7 + zone.risk_score * 0.6 : 1.0; // 0.7x - 1.3x
+    // Premium Formula: Base_Rate × Zone_Risk_Multiplier × Season_Factor × Claim_History_Discount
+    // Zone_Risk: ML-predicted (0.5 to 2.0) based on historical disruptions
+    const baseRates = { BASIC: 39, STANDARD: 49, PRO: 99 };
+    const zoneRiskMultiplier = zone ? Math.max(0.5, Math.min(2.0, 0.5 + zone.risk_score * 1.5)) : 1.0;
     
-    // Season factor (monsoon = higher)
+    // Season factor: monsoon(Jun-Sep)=1.3, summer(Apr-Jun)=1.1, winter(Dec-Feb)=0.9, normal=1.0
     const month = new Date().getMonth();
-    const seasonMultiplier = [6, 7, 8, 9].includes(month) ? 1.25 : [10, 11].includes(month) ? 1.1 : 1.0;
+    const seasonMultiplier = [5, 6, 7, 8].includes(month) ? 1.3  // Jun-Sep monsoon
+      : [3, 4].includes(month) ? 1.1    // Apr-May summer
+      : [10, 11, 0, 1].includes(month) ? 0.9  // Nov-Feb winter
+      : 1.0;
 
-    // Claim history factor
+    // Claim_Discount: 0.95 if 0 claims in last 4 weeks (reward good history)
     const recentClaims = claimsRes.data?.length || 0;
-    const claimHistoryMultiplier = recentClaims > 5 ? 1.3 : recentClaims > 2 ? 1.15 : recentClaims === 0 ? 0.9 : 1.0;
+    const claimHistoryMultiplier = recentClaims === 0 ? 0.95
+      : recentClaims <= 2 ? 1.0
+      : recentClaims <= 5 ? 1.15
+      : 1.3;
 
     const premiums: Record<string, number> = {};
     for (const [tier, base] of Object.entries(baseRates)) {
