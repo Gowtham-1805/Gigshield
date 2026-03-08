@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Menu, X } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Menu, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors = {
