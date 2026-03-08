@@ -245,7 +245,7 @@ export default function WorkerDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="shadow-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display">{t('shieldScore')}</CardTitle>
+              <CardTitle className="text-base font-display">Shield Score</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <ShieldScoreGauge score={worker?.shield_score || 50} />
