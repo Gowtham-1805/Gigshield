@@ -4,6 +4,7 @@ import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
   DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
