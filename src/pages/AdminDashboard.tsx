@@ -72,32 +72,33 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-sidebar border-r border-sidebar-border transition-all duration-300 hidden md:flex flex-col shrink-0`}>
-        <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
-          <div className="w-8 h-8 rounded-lg gradient-shield flex items-center justify-center shrink-0">
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-sidebar transition-all duration-300 hidden md:flex flex-col shrink-0 relative`}>
+        <div className="absolute inset-0 bg-gradient-to-b from-sidebar-accent/20 to-transparent pointer-events-none" />
+        <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border relative z-10">
+          <div className="w-9 h-9 rounded-xl gradient-shield flex items-center justify-center shrink-0 shadow-glow-blue">
             <Shield className="w-5 h-5 text-primary-foreground" />
           </div>
-          {sidebarOpen && <span className="font-display font-bold text-sidebar-foreground">GigShield</span>}
+          {sidebarOpen && <span className="font-display font-bold text-sidebar-foreground tracking-tight">GigShield</span>}
         </div>
-        <nav className="flex-1 py-4 space-y-1 px-2">
+        <nav className="flex-1 py-4 space-y-1 px-2 relative z-10">
           {sidebarItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                 activeTab === item.id
-                  ? 'bg-sidebar-accent text-sidebar-primary'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  ? 'bg-sidebar-primary/15 text-sidebar-primary font-medium shadow-sm'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               }`}
             >
-              <item.icon className="w-5 h-5 shrink-0" />
+              <item.icon className={`w-5 h-5 shrink-0 ${activeTab === item.id ? 'text-sidebar-primary' : ''}`} />
               {sidebarOpen && <span>{item.label}</span>}
             </button>
           ))}
         </nav>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-3 text-sidebar-foreground/50 hover:text-sidebar-foreground border-t border-sidebar-border"
+          className="p-3 text-sidebar-foreground/40 hover:text-sidebar-foreground border-t border-sidebar-border transition-colors relative z-10"
         >
           {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
@@ -105,21 +106,21 @@ export default function AdminDashboard() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card shrink-0">
+        <header className="h-16 border-b border-border/50 flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="font-display font-semibold text-lg">
+            <h1 className="font-display font-bold text-lg tracking-tight">
               {sidebarItems.find(s => s.id === activeTab)?.label}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-destructive" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
