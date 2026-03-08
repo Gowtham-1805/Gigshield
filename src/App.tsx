@@ -17,6 +17,7 @@ import ClaimHistoryPage from "./pages/ClaimHistoryPage";
 import AlertsPage from "./pages/AlertsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import PredictionsPage from "./pages/PredictionsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
