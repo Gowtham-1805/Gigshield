@@ -233,26 +233,38 @@ export default function TransparencyLedger() {
               Export CSV
             </Button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 mt-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search worker, zone, trigger..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <div className="mt-3 space-y-3">
+            <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v); setApprovedSub('all'); }}>
+              <TabsList>
+                <TabsTrigger value="approved">Approved ({counts.approved})</TabsTrigger>
+                <TabsTrigger value="processing">Processing ({counts.processing})</TabsTrigger>
+                <TabsTrigger value="flagged">Flagged ({counts.flagged})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {mainTab === 'approved' && (
+              <div className="flex items-center gap-2">
+                {(['all', 'paid', 'unpaid'] as const).map(sub => (
+                  <Button
+                    key={sub}
+                    variant={approvedSub === sub ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setApprovedSub(sub)}
+                    className="text-xs capitalize"
+                  >
+                    {sub === 'all' ? `All (${counts.approved})` : sub === 'paid' ? `Paid (${counts.approvedPaid})` : `Unpaid (${counts.approvedUnpaid})`}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Search worker, zone, trigger..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')} title="Toggle sort">
+                {sortDir === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </Button>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="flagged">Flagged</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" size="icon" onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')} title="Toggle sort">
-              {sortDir === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
