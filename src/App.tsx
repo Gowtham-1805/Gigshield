@@ -12,7 +12,7 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
-import AdminSetupPage from "./pages/AdminSetupPage";
+
 import AdminLoginPage from "./pages/AdminLoginPage";
 import ClaimHistoryPage from "./pages/ClaimHistoryPage";
 import AlertsPage from "./pages/AlertsPage";
