@@ -114,15 +114,30 @@ serve(async (req) => {
                 .eq("status", "active");
 
               if (policies && policies.length > 0) {
-                const claimInserts = policies.map((p) => ({
-                  policy_id: p.id,
-                  incident_id: incident.id,
-                  trigger_type: triggerType,
-                  amount: p.tier === "PRO" ? 600 : p.tier === "STANDARD" ? 450 : 300,
-                  fraud_score: 0.05,
-                  status: "approved" as const,
-                  fraud_details: { auto_approved: true, weather_confirmed: true },
-                }));
+                // Hourly payout model
+                const lostHoursMap: Record<string, number> = {
+                  RAIN_HEAVY: 3, RAIN_EXTREME: 6, HEAT_EXTREME: 4,
+                  AQI_SEVERE: 4, CURFEW_LOCAL: 6, STORM_CYCLONE: 8,
+                };
+                const hourlyRate = 150;
+                const baseLostHours = lostHoursMap[triggerType] || 4;
+
+                const claimInserts = policies.map((p) => {
+                  const tierMultiplier = p.tier === "PRO" ? 1.2 : p.tier === "STANDARD" ? 1.0 : 0.8;
+                  const amount = Math.min(
+                    Math.round(hourlyRate * baseLostHours * tierMultiplier),
+                    Number(p.max_payout)
+                  );
+                  return {
+                    policy_id: p.id,
+                    incident_id: incident.id,
+                    trigger_type: triggerType,
+                    amount,
+                    fraud_score: 0.05,
+                    status: "approved" as const,
+                    fraud_details: { auto_approved: true, weather_confirmed: true, hourly_rate: hourlyRate, lost_hours: baseLostHours },
+                  };
+                });
 
                 await supabase.from("claims").insert(claimInserts);
               }

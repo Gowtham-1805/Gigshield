@@ -150,6 +150,19 @@ serve(async (req) => {
       };
     });
 
+    if (claimInserts.length === 0) {
+      const skippedDuplicates = alreadyClaimedPolicyIds.size;
+      const skippedVelocity = policies.length - eligiblePolicies.length - skippedDuplicates;
+      return new Response(JSON.stringify({
+        incident,
+        claims_created: 0,
+        payouts_created: 0,
+        skipped_duplicates: skippedDuplicates,
+        skipped_velocity: skippedVelocity,
+        message: "All policies filtered by duplicate/velocity checks",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { data: claims, error: claimErr } = await supabase
       .from("claims")
       .insert(claimInserts)
