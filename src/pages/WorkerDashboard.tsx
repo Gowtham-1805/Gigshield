@@ -125,7 +125,7 @@ export default function WorkerDashboard() {
   const navItems = [
     { icon: Home, label: 'Home', active: true, path: '/worker' },
     { icon: FileText, label: 'Claims', path: '/claims' },
-    { icon: Bell, label: 'Alerts', path: '/worker', scrollTo: 'alerts-section' },
+    { icon: Bell, label: 'Alerts', path: '/alerts' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
