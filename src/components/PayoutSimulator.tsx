@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowRight, Smartphone, IndianRupee, Loader2, X } from 'l
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { sendMockWhatsAppPayout } from '@/lib/whatsapp-mock';
 
 interface PayoutSimulatorProps {
   isOpen: boolean;
@@ -33,7 +34,10 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
     const timers = [
       setTimeout(() => setStage('verifying'), 1200),
       setTimeout(() => setStage('processing'), 2400),
-      setTimeout(() => setStage('completed'), 4000),
+      setTimeout(() => {
+        setStage('completed');
+        sendMockWhatsAppPayout(amount);
+      }, 4000),
     ];
 
     return () => timers.forEach(clearTimeout);

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendMockWhatsAppClaimCreated } from '@/lib/whatsapp-mock';
 import type { Tables } from '@/integrations/supabase/types';
 
 const triggerOptions = [
@@ -40,6 +41,7 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
       if (!data?.success) throw new Error(data?.error || 'Report failed');
       setResult({ message: data.message, status: data.claim?.status || 'processing' });
       toast.success(data.message);
+      sendMockWhatsAppClaimCreated(data.claim?.amount || 450, selectedTrigger);
       setSelectedTrigger('');
       onClaimCreated();
     } catch (e: any) {
@@ -59,6 +61,7 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
       if (!data?.success) throw new Error(data?.error || 'Claim failed');
       setResult({ message: data.message, status: data.claim?.status || 'approved' });
       toast.success(data.message);
+      sendMockWhatsAppClaimCreated(data.claim?.amount || 450, data.claim?.trigger_type || 'RAIN_HEAVY');
       onClaimCreated();
     } catch (e: any) {
       toast.error(e.message || 'Failed to file claim');
