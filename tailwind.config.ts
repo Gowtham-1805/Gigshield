@@ -91,11 +91,11 @@ export default {
         },
         "pulse-shield": {
           "0%, 100%": { boxShadow: "0 0 0 0 hsl(221 83% 53% / 0.4)" },
-          "50%": { boxShadow: "0 0 0 12px hsl(221 83% 53% / 0)" },
+          "50%": { boxShadow: "0 0 0 16px hsl(221 83% 53% / 0)" },
         },
         "float": {
           "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-8px)" },
+          "50%": { transform: "translateY(-10px)" },
         },
       },
       animation: {
