@@ -103,6 +103,22 @@ export default function WorkerDashboard() {
           .gte('created_at', dayAgo)
           .order('created_at', { ascending: false });
         setRecentIncidents(incidents || []);
+
+        // Fetch proactive prediction alert
+        try {
+          const { data: predData } = await supabase.functions.invoke('ai-predict', {
+            body: { type: 'zone_predictions' },
+          });
+          if (predData?.predictions) {
+            const zoneCity = z?.city;
+            const cityPred = predData.predictions.find((p: any) => p.city === zoneCity);
+            if (cityPred && cityPred.probability > 50) {
+              setProactiveAlert(`⚠️ ${cityPred.event} expected in your area (${cityPred.probability}% chance). Your coverage will auto-apply if confirmed.`);
+            }
+          }
+        } catch (e) {
+          console.error('Prediction alert error:', e);
+        }
       }
     };
 
