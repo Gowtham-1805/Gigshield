@@ -57,6 +57,7 @@ export default function LandingPage() {
             <span className="font-display font-bold text-lg tracking-tight">GigShield</span>
           </Link>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/login">
               <Button variant="ghost" size="sm" className="font-medium">Login</Button>
             </Link>
