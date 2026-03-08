@@ -215,7 +215,7 @@ export default function WorkerDashboard() {
                   </Badge>
                 </div>
                 <p className="text-xs opacity-70">
-                  {t('validUntil')}: {policy.start_date} → {policy.end_date}
+                  Valid until: {policy.start_date} → {policy.end_date}
                 </p>
                 <div className="flex gap-4 mt-4">
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
