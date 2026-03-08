@@ -280,7 +280,7 @@ export default function CohortAnalyticsTab() {
                         contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
                         formatter={(v: number) => `₹${v}/week`}
                       />
-                      <Bar dataKey="avgPremium" name="Avg Premium" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="avgPremium" name="Avg Premium" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
