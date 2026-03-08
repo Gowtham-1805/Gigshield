@@ -318,7 +318,7 @@ export default function WorkerDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card className="shadow-card">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">{t('recentActivity')}</CardTitle>
+              <CardTitle className="text-base font-display">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {claims.length === 0 && (
