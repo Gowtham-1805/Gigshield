@@ -601,32 +601,20 @@ function AnalyticsTab() {
             {claimsByStatus.length > 0 ? (
               <div className="w-full" style={{ minHeight: 280 }}>
                 <ResponsiveContainer width="100%" height={280}>
-                  <PieChart margin={{ top: 10, right: 60, bottom: 10, left: 60 }}>
+                  <PieChart>
                     <Pie
                       data={claimsByStatus}
                       cx="50%"
                       cy="50%"
-                      outerRadius={65}
-                      innerRadius={30}
+                      outerRadius={80}
+                      innerRadius={40}
                       dataKey="value"
                       paddingAngle={2}
-                      label={({ name, percent, midAngle, outerRadius: or, cx, cy }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = or + 18;
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        const color =
-                          name === 'approved' ? 'hsl(160, 84%, 39%)' :
-                          name === 'flagged' ? 'hsl(0, 84%, 60%)' :
-                          name === 'rejected' ? 'hsl(0, 60%, 45%)' :
-                          'hsl(38, 92%, 50%)';
-                        return (
-                          <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fill={color} fontSize={10} fontWeight={600}>
-                            {`${name} ${(percent * 100).toFixed(0)}%`}
-                          </text>
-                        );
+                      label={({ name, percent }) => {
+                        const short: Record<string, string> = { approved: 'Appr', processing: 'Proc', flagged: 'Flag', rejected: 'Rej' };
+                        return `${short[name] || name} ${(percent * 100).toFixed(0)}%`;
                       }}
-                      labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}
+                      labelLine={{ strokeWidth: 1 }}
                     >
                       {claimsByStatus.map((entry, i) => (
                         <Cell key={i} fill={
