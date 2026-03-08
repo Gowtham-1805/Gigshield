@@ -381,12 +381,21 @@ function ClaimsTab() {
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground mb-2">Fraud Check Breakdown</p>
                   <div className="space-y-1.5 text-sm">
-                    {Object.entries(selectedClaim.fraud_details as Record<string, any>).map(([key, val]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="font-medium">{typeof val === 'number' ? `${(val * 100).toFixed(0)}%` : String(val)}</span>
-                      </div>
-                    ))}
+                    {Object.entries(selectedClaim.fraud_details as Record<string, any>).map(([key, val]) => {
+                      // Highlight GPS-related fields
+                      const isGps = key.startsWith('gps_');
+                      const isWarning = key === 'earnings_check' && val === 'FAILED_120_PCT';
+                      return (
+                        <div key={key} className={`flex justify-between ${isGps ? 'bg-primary/5 -mx-1 px-1 rounded' : ''}`}>
+                          <span className={`text-muted-foreground capitalize ${isGps ? 'text-primary font-medium' : ''}`}>
+                            {isGps ? '📍 ' : ''}{key.replace(/_/g, ' ')}
+                          </span>
+                          <span className={`font-medium ${isWarning ? 'text-destructive' : ''}`}>
+                            {typeof val === 'number' ? (key.includes('score') || key.includes('fraud') ? `${(val * 100).toFixed(0)}%` : val.toFixed ? val.toFixed(2) : val) : String(val)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1254,6 +1263,7 @@ function WorkersTab() {
                         <TableHead>Platform</TableHead>
                         <TableHead>City</TableHead>
                         <TableHead>Zone</TableHead>
+                        <TableHead>GPS</TableHead>
                         <TableHead>Shield Score</TableHead>
                         <TableHead>Weekly Earnings</TableHead>
                         <TableHead>Joined</TableHead>
@@ -1261,7 +1271,7 @@ function WorkersTab() {
                     </TableHeader>
                     <TableBody>
                       {list.length === 0 && (
-                        <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No workers yet</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No workers yet</TableCell></TableRow>
                       )}
                       {list.map((w: any) => (
                         <TableRow key={w.id}>
@@ -1269,6 +1279,19 @@ function WorkersTab() {
                           <TableCell><Badge variant="outline">{w.platform}</Badge></TableCell>
                           <TableCell>{w.city}</TableCell>
                           <TableCell>{w.zones?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const hasGps = w.last_lat && w.last_lng;
+                              const isRecent = w.last_location_at && (Date.now() - new Date(w.last_location_at).getTime()) < 3600000;
+                              if (hasGps && isRecent) return (
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20" variant="outline">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-secondary mr-1 animate-pulse inline-block" />📍 Live
+                                </Badge>
+                              );
+                              if (hasGps) return <Badge variant="outline" className="text-muted-foreground">📍 Stale</Badge>;
+                              return <span className="text-muted-foreground text-xs">—</span>;
+                            })()}
+                          </TableCell>
                           <TableCell>
                             <span className={w.shield_score >= 70 ? 'text-secondary font-medium' : w.shield_score >= 40 ? 'text-accent' : 'text-destructive'}>
                               {w.shield_score}

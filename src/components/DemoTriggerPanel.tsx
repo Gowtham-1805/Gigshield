@@ -49,7 +49,7 @@ export default function DemoTriggerPanel() {
 
     const pipelineSteps: Step[] = [
       { id: '1', label: 'Incident Created', icon: AlertTriangle, detail: `${trigger.label} detected in ${zone.name}`, status: 'pending' },
-      { id: '2', label: 'Affected Workers Identified', icon: Search, detail: `Scanning active policies in ${zone.name}...`, status: 'pending' },
+      { id: '2', label: 'Scanning Workers (Zone + GPS)', icon: Search, detail: `Finding registered & GPS-nearby workers in ${zone.name}...`, status: 'pending' },
       { id: '3', label: 'Auto-Initiating Claims', icon: Zap, detail: 'Processing claims...', status: 'pending' },
       { id: '4', label: 'Fraud Checks Running', icon: Shield, detail: 'GPS validation, weather confirm, anomaly scoring', status: 'pending' },
       { id: '5', label: 'Claims Approved', icon: Check, detail: 'Evaluating results...', status: 'pending' },
@@ -74,7 +74,9 @@ export default function DemoTriggerPanel() {
 
       // Animate remaining steps with real data
       await new Promise(r => setTimeout(r, 500));
+      const eligibility = data.eligibility || {};
       setSteps(prev => prev.map((s, j) => {
+        if (j === 1) return { ...s, status: 'done', detail: `${eligibility.registered_workers || 0} registered + ${eligibility.gps_nearby_workers || 0} GPS-nearby (${eligibility.gps_radius_km || 10}km radius)` };
         if (j === 2) return { ...s, status: 'done', detail: `${data.claims_created} claims initiated` };
         if (j === 3) return { ...s, status: 'active' };
         return s;
