@@ -30,6 +30,8 @@ export default function WorkerDashboard() {
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
   const [zone, setZone] = useState<Tables<'zones'> | null>(null);
   const [claimedThisWeek, setClaimedThisWeek] = useState(0);
+  const [weatherAlert, setWeatherAlert] = useState<{ text: string; icon: string } | null>(null);
+  const [recentIncidents, setRecentIncidents] = useState<Tables<'incidents'>[]>([]);
 
   useEffect(() => {
     if (!worker) return;
@@ -65,6 +67,39 @@ export default function WorkerDashboard() {
       if (worker.zone_id) {
         const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
         setZone(z);
+
+        // Fetch recent weather reading for alert
+        const { data: reading } = await supabase
+          .from('weather_readings')
+          .select('*')
+          .eq('zone_id', worker.zone_id)
+          .order('recorded_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (reading) {
+          const alerts: string[] = [];
+          if (reading.rainfall && reading.rainfall > 30) alerts.push(`🌧️ Rainfall: ${reading.rainfall}mm/hr`);
+          if (reading.temperature && reading.temperature > 42) alerts.push(`🔥 Temperature: ${reading.temperature}°C`);
+          if (reading.aqi && reading.aqi > 300) alerts.push(`😷 AQI: ${reading.aqi}`);
+          if (reading.wind_speed && reading.wind_speed > 20) alerts.push(`💨 Wind: ${reading.wind_speed}m/s`);
+          
+          if (alerts.length > 0) {
+            setWeatherAlert({ text: alerts.join(' • ') + ' — Your coverage will auto-apply.', icon: '⚠️' });
+          } else {
+            setWeatherAlert({ text: `Current: ${reading.temperature?.toFixed(1)}°C, AQI ${reading.aqi || 'N/A'} — No alerts. You're safe! ✅`, icon: '☀️' });
+          }
+        }
+
+        // Fetch recent incidents for this zone
+        const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
+        const { data: incidents } = await supabase
+          .from('incidents')
+          .select('*')
+          .eq('zone_id', worker.zone_id)
+          .gte('created_at', dayAgo)
+          .order('created_at', { ascending: false });
+        setRecentIncidents(incidents || []);
       }
     };
 
@@ -183,21 +218,43 @@ export default function WorkerDashboard() {
         </motion.div>
 
         {/* Weather Alert */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="border-accent/30 bg-accent/5 shadow-card">
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 text-xl">
-                ⚠️
-              </div>
-              <div>
-                <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Heavy rain expected Thursday in your zone. Your coverage will auto-apply.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {weatherAlert && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className={`shadow-card ${weatherAlert.icon === '⚠️' ? 'border-accent/30 bg-accent/5' : 'border-secondary/30 bg-secondary/5'}`}>
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 text-xl">
+                  {weatherAlert.icon}
+                </div>
+                <div>
+                  <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{weatherAlert.text}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Recent Incidents */}
+        {recentIncidents.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Card className="shadow-card border-destructive/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-display text-destructive">🚨 Recent Incidents in Your Zone</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentIncidents.slice(0, 3).map((inc) => {
+                  const trigger = triggerTypes.find(t => t.id === inc.trigger_type);
+                  return (
+                    <div key={inc.id} className="flex items-center justify-between py-1.5 text-sm">
+                      <span>{trigger?.icon} {trigger?.label} — Severity {inc.severity}%</span>
+                      <span className="text-xs text-muted-foreground">{new Date(inc.created_at).toLocaleTimeString()}</span>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
