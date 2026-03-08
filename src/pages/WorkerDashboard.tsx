@@ -26,6 +26,7 @@ export default function WorkerDashboard() {
   const navigate = useNavigate();
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
+  const [payouts, setPayouts] = useState<Tables<'payouts'>[]>([]);
   const [zone, setZone] = useState<Tables<'zones'> | null>(null);
   const [claimedThisWeek, setClaimedThisWeek] = useState(0);
   const [weatherAlert, setWeatherAlert] = useState<{ text: string; icon: string } | null>(null);
