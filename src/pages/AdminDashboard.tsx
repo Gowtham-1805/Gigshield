@@ -36,6 +36,7 @@ const sidebarItems = [
   { icon: DollarSign, label: 'Financial', id: 'financial' },
   { icon: Users, label: 'Workers', id: 'workers' },
   { icon: PieChartIcon, label: 'Cohorts', id: 'cohorts' },
+  { icon: Eye, label: 'Ledger', id: 'ledger' },
   { icon: Zap, label: 'Demo Trigger', id: 'demo' },
 ];
 
