@@ -642,6 +642,41 @@ function AnalyticsTab() {
 }
 
 function FinancialTab() {
+  const [financials, setFinancials] = useState<{ month: string; premium: number; claims: number }[]>([]);
+
+  useEffect(() => {
+    const fetchFinancials = async () => {
+      // Fetch real data from policies and claims
+      const [policiesRes, claimsRes] = await Promise.all([
+        supabase.from('policies').select('premium, created_at'),
+        supabase.from('claims').select('amount, status, created_at').eq('status', 'approved'),
+      ]);
+
+      const monthMap: Record<string, { premium: number; claims: number }> = {};
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      (policiesRes.data || []).forEach(p => {
+        const m = months[new Date(p.created_at).getMonth()];
+        if (!monthMap[m]) monthMap[m] = { premium: 0, claims: 0 };
+        monthMap[m].premium += Number(p.premium);
+      });
+
+      (claimsRes.data || []).forEach(c => {
+        const m = months[new Date(c.created_at).getMonth()];
+        if (!monthMap[m]) monthMap[m] = { premium: 0, claims: 0 };
+        monthMap[m].claims += Number(c.amount);
+      });
+
+      // If no real data, use mock as fallback
+      const data = Object.keys(monthMap).length > 0
+        ? Object.entries(monthMap).map(([month, v]) => ({ month, ...v }))
+        : mockFinancials;
+
+      setFinancials(data);
+    };
+    fetchFinancials();
+  }, []);
+
   return (
     <Card className="shadow-card">
       <CardHeader>
@@ -649,7 +684,7 @@ function FinancialTab() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={mockFinancials}>
+          <AreaChart data={financials}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />

@@ -1,13 +1,19 @@
-import { useEffect, useRef } from 'react';
-import { zones } from '@/lib/mock-data';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
 export default function AdminZoneMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const [dbZones, setDbZones] = useState<Tables<'zones'>[]>([]);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    supabase.from('zones').select('*').then(({ data }) => setDbZones(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current || dbZones.length === 0) return;
 
     const loadMap = async () => {
       const L = await import('leaflet');
@@ -20,10 +26,10 @@ export default function AdminZoneMap() {
         attribution: '© OpenStreetMap',
       }).addTo(map);
 
-      zones.forEach((zone) => {
-        const color = zone.riskScore > 0.7 ? '#ef4444' : zone.riskScore > 0.4 ? '#f59e0b' : '#10b981';
+      dbZones.forEach((zone) => {
+        const color = zone.risk_score > 0.7 ? '#ef4444' : zone.risk_score > 0.4 ? '#f59e0b' : '#10b981';
         const circle = L.circleMarker([zone.lat, zone.lng], {
-          radius: 10 + zone.riskScore * 15,
+          radius: 10 + zone.risk_score * 15,
           color,
           fillColor: color,
           fillOpacity: 0.35,
@@ -33,7 +39,7 @@ export default function AdminZoneMap() {
         circle.bindPopup(`
           <div style="font-family: 'Space Grotesk', sans-serif;">
             <strong>${zone.name}</strong><br/>
-            Risk Score: <strong style="color:${color}">${(zone.riskScore * 100).toFixed(0)}%</strong><br/>
+            Risk Score: <strong style="color:${color}">${(zone.risk_score * 100).toFixed(0)}%</strong><br/>
             City: ${zone.city}
           </div>
         `);
@@ -48,13 +54,13 @@ export default function AdminZoneMap() {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [dbZones]);
 
   return (
     <Card className="shadow-card">
       <CardHeader>
         <CardTitle className="font-display">Zone Risk Map</CardTitle>
-        <CardDescription>Interactive map with color-coded risk zones</CardDescription>
+        <CardDescription>Interactive map with color-coded risk zones ({dbZones.length} zones from database)</CardDescription>
       </CardHeader>
       <CardContent>
         <div ref={mapRef} className="w-full h-[500px] rounded-lg overflow-hidden" />
