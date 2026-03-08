@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
+import GpsLocationCard from '@/components/GpsLocationCard';
 import { toast } from 'sonner';
 import { sendMockWhatsAppPremiumPaid } from '@/lib/whatsapp-mock';
 import type { Tables } from '@/integrations/supabase/types';
