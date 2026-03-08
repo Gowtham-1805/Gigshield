@@ -294,8 +294,8 @@ IMPORTANT - Estimated claims per zone MUST be realistic and LOW:
         (f: any) => validZoneIds.has(f.zone_id)
       ).map((f: any) => ({
         ...f,
-        // Cap estimated claims to realistic range per zone (max ₹5000/week)
-        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
+        // Cap estimated claims to realistic range based on policy tier distribution
+        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxPerZoneClaim),
       }));
 
       return new Response(JSON.stringify({
