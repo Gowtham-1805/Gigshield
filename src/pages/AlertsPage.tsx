@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bell, Cloud, Brain, FileCheck, AlertTriangle, Droplets, Flame, Wind, Shield } from 'lucide-react';
+import { ArrowLeft, Bell, Cloud, Brain, FileCheck, AlertTriangle, Droplets, Flame, Wind, Shield, Banknote } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { triggerTypes } from '@/lib/mock-data';
+import { useNotifications } from '@/hooks/use-notifications';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface AlertItem {
