@@ -304,13 +304,14 @@ export default function WorkerDashboard() {
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border md:hidden">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item) => (
-            <button
+            <Link
               key={item.label}
+              to={item.path}
               className={`flex flex-col items-center gap-1 px-3 py-2 text-xs ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <item.icon className="w-5 h-5" />
               <span>{item.label}</span>
-            </button>
+            </Link>
           ))}
         </div>
       </nav>
