@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [upiId, setUpiId] = useState('');
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
+  const [renewing, setRenewing] = useState(false);
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
 
   useEffect(() => {
