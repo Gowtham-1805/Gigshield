@@ -27,7 +27,7 @@ const statusColors = {
 const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function WorkerDashboard() {
-  const { worker, user, signOut } = useAuth();
+  const { worker, user, signOut, refreshWorker } = useAuth();
   const navigate = useNavigate();
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
