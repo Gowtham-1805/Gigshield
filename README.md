@@ -335,6 +335,30 @@ An AI-computed trust score (0-100) for each worker:
 | **OpenWeatherMap AQI** | Air quality index data |
 | **OpenWeatherMap Forecast** | 3-hour forecast for predictions |
 
+### Payment & Notification Integrations (Demo Mode)
+
+GigShield is architecturally designed for real-world payment and notification integrations. The current demo showcases these flows using high-fidelity mocks:
+
+| Integration | Demo Implementation | Production-Ready For |
+|-------------|---------------------|---------------------|
+| **UPI Payouts** | Visual Payout Simulator with animated transaction flow | **Razorpay Fund Account + Contacts API** |
+| **WhatsApp Notifications** | Mock toasts with WhatsApp-branded styling | **Twilio WhatsApp Business API** |
+
+#### Payout Simulator
+The `PayoutSimulator` component demonstrates the instant UPI payout experience:
+- Animated 3-step flow: `Initiating → Processing → Completed`
+- Mock transaction IDs and completion times
+- Realistic UPI interface preview
+- **Upgrade path:** Replace mock with Razorpay `POST /contacts` + `POST /fund_accounts` + `POST /payouts` API calls
+
+#### WhatsApp Notifications (Mock)
+The `whatsapp-mock.ts` utility simulates real-time worker notifications:
+- **Claim Created:** `"GigShield: Your [type] claim for ₹[amount] has been submitted. Track status in-app."`
+- **Claim Approved:** `"GigShield: Great news [Name]! Your claim for ₹[amount] is APPROVED. Payout processing..."`
+- **Payout Sent:** `"GigShield: ₹[amount] credited to your UPI! Transaction complete. Stay safe! 🛡️"`
+- **Weather Alert:** `"GigShield: ⚠️ [type] detected in your zone. Your coverage is ACTIVE. Stay safe!"`
+- **Upgrade path:** Replace toast calls with Twilio WhatsApp API via Edge Function
+
 ### Database Schema
 - **workers** — Worker profiles (name, phone, platform, city, zone, shield_score)
 - **zones** — Geographic zones with risk scores and coordinates
