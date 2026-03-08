@@ -12,7 +12,7 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
-import AdminSetupPage from "./pages/AdminSetupPage";
+
 import AdminLoginPage from "./pages/AdminLoginPage";
 import ClaimHistoryPage from "./pages/ClaimHistoryPage";
 import AlertsPage from "./pages/AlertsPage";
@@ -37,7 +37,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/admin-setup" element={<AdminSetupPage />} />
+              
               <Route path="/admin-login" element={<AdminLoginPage />} />
               <Route path="/worker" element={<ProtectedRoute><WorkerDashboard /></ProtectedRoute>} />
               <Route path="/claims" element={<ProtectedRoute><ClaimHistoryPage /></ProtectedRoute>} />
