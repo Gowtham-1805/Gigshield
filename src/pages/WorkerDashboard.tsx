@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote, Brain } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote, Brain, TrendingUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -141,6 +141,7 @@ export default function WorkerDashboard() {
     { icon: Home, label: 'Home', active: true, path: '/worker' },
     { icon: FileText, label: 'Claims', path: '/claims' },
     { icon: Brain, label: 'Forecast', path: '/predictions' },
+    { icon: TrendingUp, label: 'Impact', path: '/earnings' },
     { icon: Bell, label: 'Alerts', path: '/alerts' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
