@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendMockWhatsAppPremiumPaid, sendMockWhatsAppPlanChanged } from '@/lib/whatsapp-mock';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -83,6 +84,7 @@ export default function ProfilePage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`🛡️ Switched to ${selectedTier} plan!`);
+      sendMockWhatsAppPlanChanged(plan.premium, selectedTier);
       if (data.new_policy) setPolicy(data.new_policy);
       setShowChangePlan(false);
       setSelectedTier(null);
@@ -111,6 +113,7 @@ export default function ProfilePage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success('🛡️ Policy renewed!');
+      sendMockWhatsAppPremiumPaid(Number(policy.premium), policy.tier);
       if (data.new_policy) setPolicy(data.new_policy);
     } catch (e: any) {
       toast.error(e.message || 'Renewal failed');

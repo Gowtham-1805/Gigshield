@@ -1,10 +1,12 @@
 import { toast } from 'sonner';
 
 interface WhatsAppNotification {
-  type: 'claim_created' | 'claim_approved' | 'payout_sent' | 'weather_alert';
+  type: 'claim_created' | 'claim_approved' | 'payout_sent' | 'weather_alert' | 'premium_paid' | 'plan_changed';
   amount?: number;
   triggerType?: string;
   workerName?: string;
+  tier?: string;
+  newTier?: string;
 }
 
 const notificationTemplates = {
@@ -23,6 +25,14 @@ const notificationTemplates = {
   weather_alert: (data: WhatsAppNotification) => ({
     title: '📱 WhatsApp Alert Sent',
     description: `"GigShield: ⚠️ ${data.triggerType?.replace('_', ' ')} detected in your zone. Your coverage is ACTIVE. Stay safe!"`,
+  }),
+  premium_paid: (data: WhatsAppNotification) => ({
+    title: '📱 WhatsApp Receipt Sent',
+    description: `"GigShield: ✅ ₹${data.amount}/wk premium paid for ${data.tier} plan. You're protected for 7 days! 🛡️"`,
+  }),
+  plan_changed: (data: WhatsAppNotification) => ({
+    title: '📱 WhatsApp Notification Sent',
+    description: `"GigShield: 🔄 Plan switched to ${data.newTier}! New premium ₹${data.amount}/wk. Coverage active now! 🛡️"`,
   }),
 };
 
@@ -58,4 +68,12 @@ export function sendMockWhatsAppPayout(amount: number) {
 
 export function sendMockWhatsAppWeatherAlert(triggerType: string) {
   sendMockWhatsAppNotification({ type: 'weather_alert', triggerType });
+}
+
+export function sendMockWhatsAppPremiumPaid(amount: number, tier: string) {
+  sendMockWhatsAppNotification({ type: 'premium_paid', amount, tier });
+}
+
+export function sendMockWhatsAppPlanChanged(amount: number, newTier: string) {
+  sendMockWhatsAppNotification({ type: 'plan_changed', amount, newTier });
 }

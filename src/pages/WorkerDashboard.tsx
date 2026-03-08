@@ -14,6 +14,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
 import { toast } from 'sonner';
+import { sendMockWhatsAppPremiumPaid } from '@/lib/whatsapp-mock';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors = {
@@ -141,6 +142,7 @@ export default function WorkerDashboard() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success('🛡️ Policy renewed for another week!');
+      sendMockWhatsAppPremiumPaid(Number(policy.premium), policy.tier);
       const { data: newPol } = await supabase
         .from('policies').select('*').eq('worker_id', worker!.id).eq('status', 'active')
         .order('created_at', { ascending: false }).limit(1).maybeSingle();
