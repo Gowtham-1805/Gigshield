@@ -12,9 +12,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { mockFinancials } from '@/lib/mock-data';
-import { useLanguage } from '@/lib/language-context';
 import { useAuth } from '@/lib/auth-context';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
@@ -35,7 +33,6 @@ const sidebarItems = [
 ];
 
 export default function AdminDashboard() {
-  const { t } = useLanguage();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
@@ -118,7 +115,6 @@ export default function AdminDashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <LanguageToggle />
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-destructive" />

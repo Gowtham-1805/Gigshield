@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { useLanguage } from '@/lib/language-context';
 import { useAuth } from '@/lib/auth-context';
 import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
@@ -23,7 +21,6 @@ const statusColors = {
 const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function WorkerDashboard() {
-  const { t } = useLanguage();
   const { worker, user, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileNav, setMobileNav] = useState(false);
@@ -167,10 +164,10 @@ export default function WorkerDashboard() {
   };
 
   const navItems = [
-    { icon: Home, label: t('home'), active: true, path: '/worker' },
-    { icon: FileText, label: t('claims'), path: '/claims' },
-    { icon: Bell, label: t('alerts'), path: '/worker' },
-    { icon: User, label: t('profile'), path: '/profile' },
+    { icon: Home, label: 'Home', active: true, path: '/worker' },
+    { icon: FileText, label: 'Claims', path: '/claims' },
+    { icon: Bell, label: 'Alerts', path: '/worker' },
+    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
@@ -185,7 +182,6 @@ export default function WorkerDashboard() {
             <span className="font-display font-bold text-sm">GigShield</span>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageToggle />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
               <LogOut className="w-4 h-4" />
             </Button>
@@ -199,7 +195,7 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-6 max-w-lg space-y-5">
         {/* Greeting */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-muted-foreground text-sm">{t('welcomeBack')},</p>
+          <p className="text-muted-foreground text-sm">Welcome back,</p>
           <h1 className="font-display text-2xl font-bold">{worker?.name || 'Worker'} 👋</h1>
         </motion.div>
 
@@ -211,24 +207,24 @@ export default function WorkerDashboard() {
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-xs opacity-80">{t('activePlan')}</p>
+                    <p className="text-xs opacity-80">Active Plan</p>
                     <p className="font-display font-bold text-lg">{policy.tier}</p>
                   </div>
                   <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
-                    {t('coverageActive')} ✅
+                    Coverage Active ✅
                   </Badge>
                 </div>
                 <p className="text-xs opacity-70">
-                  {t('validUntil')}: {policy.start_date} → {policy.end_date}
+                  Valid until: {policy.start_date} → {policy.end_date}
                 </p>
                 <div className="flex gap-4 mt-4">
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
                     <p className="font-display font-bold text-xl">₹{claimedThisWeek.toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">{t('claimedThisWeek')}</p>
+                    <p className="text-[10px] opacity-70">Claimed this week</p>
                   </div>
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
                     <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">{t('maxCoverage')}</p>
+                    <p className="text-[10px] opacity-70">Max coverage</p>
                   </div>
                 </div>
               </CardContent>
@@ -249,7 +245,7 @@ export default function WorkerDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="shadow-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display">{t('shieldScore')}</CardTitle>
+              <CardTitle className="text-base font-display">Shield Score</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <ShieldScoreGauge score={worker?.shield_score || 50} />
@@ -288,7 +284,7 @@ export default function WorkerDashboard() {
                   {weatherAlert.icon}
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
+                  <p className="font-display font-semibold text-sm">Weather Alert</p>
                   <p className="text-sm text-muted-foreground mt-1">{weatherAlert.text}</p>
                 </div>
               </CardContent>
@@ -322,7 +318,7 @@ export default function WorkerDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card className="shadow-card">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">{t('recentActivity')}</CardTitle>
+              <CardTitle className="text-base font-display">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {claims.length === 0 && (
@@ -356,11 +352,11 @@ export default function WorkerDashboard() {
             onClick={handleRenew}
             disabled={renewing || !policy}
           >
-            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>{t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
+            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>Renew Plan {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full">
-              {t('claimHistory')}
+              Claim History
             </Button>
           </Link>
         </div>

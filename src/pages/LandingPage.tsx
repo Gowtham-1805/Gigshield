@@ -3,8 +3,6 @@ import { Shield, CloudRain, Thermometer, Wind, Zap, ChevronRight, Check } from '
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { useLanguage } from '@/lib/language-context';
 import { Link } from 'react-router-dom';
 
 const fadeUp = {
@@ -17,14 +15,14 @@ const fadeUp = {
 
 const plans = [
   {
-    tier: 'basic' as const,
+    tier: 'Basic',
     price: '29–49',
     maxPayout: '₹1,500',
     features: ['Heavy rainfall coverage', 'Auto-claim processing', 'UPI payouts < 10 min'],
     excluded: ['AQI protection', 'Social disruption cover', 'Priority support'],
   },
   {
-    tier: 'standard' as const,
+    tier: 'Standard',
     price: '49–79',
     maxPayout: '₹2,500',
     popular: true,
@@ -32,7 +30,7 @@ const plans = [
     excluded: ['Social disruption cover'],
   },
   {
-    tier: 'pro' as const,
+    tier: 'Pro',
     price: '79–129',
     maxPayout: '₹4,000',
     features: ['All weather coverage', 'AQI protection', 'Curfew & bandh cover', 'Cyclone coverage', 'Priority support', 'UPI payouts < 5 min'],
@@ -41,8 +39,6 @@ const plans = [
 ];
 
 export default function LandingPage() {
-  const { t } = useLanguage();
-
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navbar */}
@@ -55,13 +51,12 @@ export default function LandingPage() {
             <span className="font-display font-bold text-lg">GigShield</span>
           </Link>
           <div className="flex items-center gap-3">
-            <LanguageToggle />
             <Link to="/login">
-              <Button variant="ghost" size="sm">{t('login')}</Button>
+              <Button variant="ghost" size="sm">Login</Button>
             </Link>
             <Link to="/signup">
               <Button size="sm" className="gradient-shield text-primary-foreground border-0 hover:opacity-90">
-                {t('signup')}
+                Sign Up
               </Button>
             </Link>
           </div>
@@ -70,7 +65,6 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
-        {/* BG orbs */}
         <div className="absolute top-20 -left-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-0 -right-32 w-80 h-80 rounded-full bg-secondary/10 blur-3xl" />
 
@@ -85,25 +79,25 @@ export default function LandingPage() {
             className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 max-w-4xl mx-auto"
             variants={fadeUp} custom={1} initial="hidden" animate="visible"
           >
-            <span className="text-gradient-shield">{t('heroTagline')}</span>
+            <span className="text-gradient-shield">Kaam ruke toh paisa nahi, GigShield hai na!</span>
           </motion.h1>
 
           <motion.p
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             variants={fadeUp} custom={2} initial="hidden" animate="visible"
           >
-            {t('heroSubtitle')}
+            Automatic income protection. Zero paperwork. Weekly plans starting at ₹49.
           </motion.p>
 
           <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp} custom={3} initial="hidden" animate="visible">
             <Link to="/signup">
               <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-lg px-8 h-14 hover:opacity-90 animate-pulse-shield">
-                {t('getProtected')} <ChevronRight className="w-5 h-5" />
+                Get Protected Now <ChevronRight className="w-5 h-5" />
               </Button>
             </Link>
             <a href="#pricing">
               <Button size="lg" variant="outline" className="text-lg px-8 h-14">
-                {t('viewPlans')}
+                View Plans
               </Button>
             </a>
           </motion.div>
@@ -117,14 +111,14 @@ export default function LandingPage() {
             className="font-display text-3xl md:text-4xl font-bold text-center mb-16"
             initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           >
-            {t('howItWorks')}
+            How It Works
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { icon: CloudRain, title: t('step1Title'), desc: t('step1Desc'), color: 'bg-primary/10 text-primary' },
-              { icon: Zap, title: t('step2Title'), desc: t('step2Desc'), color: 'bg-accent/10 text-accent' },
-              { icon: Shield, title: t('step3Title'), desc: t('step3Desc'), color: 'bg-secondary/10 text-secondary' },
+              { icon: CloudRain, title: 'Disruption Happens', desc: "Heavy rain, extreme heat, AQI spike, or curfew hits your zone.", color: 'bg-primary/10 text-primary' },
+              { icon: Zap, title: 'Auto-Detected', desc: 'Our AI monitors weather & events 24/7. Triggers activate automatically.', color: 'bg-accent/10 text-accent' },
+              { icon: Shield, title: 'Instant Payout', desc: 'Money hits your UPI within minutes. No forms. No waiting.', color: 'bg-secondary/10 text-secondary' },
             ].map((step, i) => (
               <motion.div
                 key={i}
@@ -149,8 +143,8 @@ export default function LandingPage() {
       <section id="pricing" className="py-20 px-4">
         <div className="container mx-auto">
           <motion.div className="text-center mb-16" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">{t('pricingTitle')}</h2>
-            <p className="text-muted-foreground text-lg">{t('pricingSubtitle')}</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">Choose Your Shield</h2>
+            <p className="text-muted-foreground text-lg">Weekly plans that fit your budget</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -162,19 +156,19 @@ export default function LandingPage() {
                 <Card className={`relative overflow-hidden h-full ${plan.popular ? 'border-primary shadow-elevated ring-2 ring-primary/20' : 'shadow-card'}`}>
                   {plan.popular && (
                     <div className="absolute top-0 right-0 gradient-shield text-primary-foreground text-xs font-bold px-4 py-1 rounded-bl-lg">
-                      {t('popular')}
+                      Most Popular
                     </div>
                   )}
                   <CardHeader className="pb-4">
                     <CardDescription className="uppercase tracking-wider text-xs font-semibold">
-                      {t(`${plan.tier}Tier` as any)}
+                      {plan.tier}
                     </CardDescription>
                     <CardTitle className="font-display text-3xl">
                       ₹{plan.price}
-                      <span className="text-base font-normal text-muted-foreground">{t('perWeek')}</span>
+                      <span className="text-base font-normal text-muted-foreground">/week</span>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {t('maxPayout')}: {plan.maxPayout}
+                      Max weekly payout: {plan.maxPayout}
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -192,7 +186,7 @@ export default function LandingPage() {
                     ))}
                     <Link to="/signup" className="block pt-4">
                       <Button className={`w-full ${plan.popular ? 'gradient-shield text-primary-foreground border-0' : ''}`} variant={plan.popular ? 'default' : 'outline'}>
-                        {t('getProtected')}
+                        Get Protected Now
                       </Button>
                     </Link>
                   </CardContent>
@@ -206,13 +200,13 @@ export default function LandingPage() {
       {/* Trust Indicators */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto">
-          <h2 className="font-display text-3xl font-bold text-center mb-12">{t('trustTitle')}</h2>
+          <h2 className="font-display text-3xl font-bold text-center mb-12">Why Gig Workers Trust GigShield</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {[
-              { icon: Zap, label: t('trustSpeed'), value: '< 10 min' },
-              { icon: Shield, label: t('trustPaperwork'), value: '0 forms' },
-              { icon: Thermometer, label: t('trustUpi'), value: 'UPI' },
-              { icon: Wind, label: t('trustWorkers'), value: '10K+' },
+              { icon: Zap, label: '< 10 min payouts', value: '< 10 min' },
+              { icon: Shield, label: 'Zero paperwork', value: '0 forms' },
+              { icon: Thermometer, label: 'Direct UPI transfer', value: 'UPI' },
+              { icon: Wind, label: '10,000+ workers protected', value: '10K+' },
             ].map((item, i) => (
               <motion.div
                 key={i}
