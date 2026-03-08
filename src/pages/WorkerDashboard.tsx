@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
+import WorkerReportPanel from '@/components/WorkerReportPanel';
 import { useAuth } from '@/lib/auth-context';
 import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
@@ -32,70 +33,70 @@ export default function WorkerDashboard() {
   const [proactiveAlert, setProactiveAlert] = useState<string | null>(null);
   const [renewing, setRenewing] = useState(false);
 
+  const fetchData = async () => {
+    if (!worker) return;
+    const { data: pol } = await supabase
+      .from('policies').select('*').eq('worker_id', worker.id).eq('status', 'active')
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    setPolicy(pol);
+
+    if (pol) {
+      const { data: claimsData } = await supabase
+        .from('claims').select('*').eq('policy_id', pol.id)
+        .order('created_at', { ascending: false }).limit(10);
+      setClaims(claimsData || []);
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
+      setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
+    }
+
+    if (worker.zone_id) {
+      const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
+      setZone(z);
+
+      const { data: reading } = await supabase
+        .from('weather_readings').select('*').eq('zone_id', worker.zone_id)
+        .order('recorded_at', { ascending: false }).limit(1).maybeSingle();
+
+      if (reading) {
+        const alerts: string[] = [];
+        if (reading.rainfall && reading.rainfall > 30) alerts.push(`🌧️ Rainfall: ${reading.rainfall}mm/hr`);
+        if (reading.temperature && reading.temperature > 42) alerts.push(`🔥 Temperature: ${reading.temperature}°C`);
+        if (reading.aqi && reading.aqi > 300) alerts.push(`😷 AQI: ${reading.aqi}`);
+        if (reading.wind_speed && reading.wind_speed > 20) alerts.push(`💨 Wind: ${reading.wind_speed}m/s`);
+        
+        if (alerts.length > 0) {
+          setWeatherAlert({ text: alerts.join(' • ') + ' — Your coverage will auto-apply.', icon: '⚠️' });
+        } else {
+          setWeatherAlert({ text: `Current: ${reading.temperature?.toFixed(1)}°C, AQI ${reading.aqi || 'N/A'} — No alerts. You're safe! ✅`, icon: '☀️' });
+        }
+      }
+
+      const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
+      const { data: incidents } = await supabase
+        .from('incidents').select('*').eq('zone_id', worker.zone_id)
+        .gte('created_at', dayAgo).order('created_at', { ascending: false });
+      setRecentIncidents(incidents || []);
+
+      try {
+        const { data: predData } = await supabase.functions.invoke('ai-predict', {
+          body: { type: 'zone_predictions' },
+        });
+        if (predData?.predictions) {
+          const zoneCity = z?.city;
+          const cityPred = predData.predictions.find((p: any) => p.city === zoneCity);
+          if (cityPred && cityPred.probability > 50) {
+            setProactiveAlert(`⚠️ ${cityPred.event} expected in your area (${cityPred.probability}% chance). Your coverage will auto-apply if confirmed.`);
+          }
+        }
+      } catch (e) {
+        console.error('Prediction alert error:', e);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!worker) return;
-
-    const fetchData = async () => {
-      const { data: pol } = await supabase
-        .from('policies').select('*').eq('worker_id', worker.id).eq('status', 'active')
-        .order('created_at', { ascending: false }).limit(1).maybeSingle();
-      setPolicy(pol);
-
-      if (pol) {
-        const { data: claimsData } = await supabase
-          .from('claims').select('*').eq('policy_id', pol.id)
-          .order('created_at', { ascending: false }).limit(10);
-        setClaims(claimsData || []);
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-        const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
-        setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
-      }
-
-      if (worker.zone_id) {
-        const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
-        setZone(z);
-
-        const { data: reading } = await supabase
-          .from('weather_readings').select('*').eq('zone_id', worker.zone_id)
-          .order('recorded_at', { ascending: false }).limit(1).maybeSingle();
-
-        if (reading) {
-          const alerts: string[] = [];
-          if (reading.rainfall && reading.rainfall > 30) alerts.push(`🌧️ Rainfall: ${reading.rainfall}mm/hr`);
-          if (reading.temperature && reading.temperature > 42) alerts.push(`🔥 Temperature: ${reading.temperature}°C`);
-          if (reading.aqi && reading.aqi > 300) alerts.push(`😷 AQI: ${reading.aqi}`);
-          if (reading.wind_speed && reading.wind_speed > 20) alerts.push(`💨 Wind: ${reading.wind_speed}m/s`);
-          
-          if (alerts.length > 0) {
-            setWeatherAlert({ text: alerts.join(' • ') + ' — Your coverage will auto-apply.', icon: '⚠️' });
-          } else {
-            setWeatherAlert({ text: `Current: ${reading.temperature?.toFixed(1)}°C, AQI ${reading.aqi || 'N/A'} — No alerts. You're safe! ✅`, icon: '☀️' });
-          }
-        }
-
-        const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
-        const { data: incidents } = await supabase
-          .from('incidents').select('*').eq('zone_id', worker.zone_id)
-          .gte('created_at', dayAgo).order('created_at', { ascending: false });
-        setRecentIncidents(incidents || []);
-
-        try {
-          const { data: predData } = await supabase.functions.invoke('ai-predict', {
-            body: { type: 'zone_predictions' },
-          });
-          if (predData?.predictions) {
-            const zoneCity = z?.city;
-            const cityPred = predData.predictions.find((p: any) => p.city === zoneCity);
-            if (cityPred && cityPred.probability > 50) {
-              setProactiveAlert(`⚠️ ${cityPred.event} expected in your area (${cityPred.probability}% chance). Your coverage will auto-apply if confirmed.`);
-            }
-          }
-        } catch (e) {
-          console.error('Prediction alert error:', e);
-        }
-      }
-    };
-
     fetchData();
     const channel = supabase.channel('worker-claims')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, () => fetchData())
@@ -279,32 +280,14 @@ export default function WorkerDashboard() {
           </motion.div>
         )}
 
-        {/* Recent Incidents */}
-        {recentIncidents.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <Card className="shadow-card border-destructive/15 bg-destructive/3">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-display text-destructive flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                    <Bell className="w-3.5 h-3.5 text-destructive" />
-                  </div>
-                  Recent Incidents
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentIncidents.slice(0, 3).map((inc) => {
-                  const trigger = triggerTypes.find(t => t.id === inc.trigger_type);
-                  return (
-                    <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/50 text-sm">
-                      <span className="font-medium">{trigger?.icon} {trigger?.label} — {inc.severity}%</span>
-                      <span className="text-xs text-muted-foreground">{new Date(inc.created_at).toLocaleTimeString()}</span>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+        {/* Worker Report & Claim Panel */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}>
+          <WorkerReportPanel
+            recentIncidents={recentIncidents}
+            hasActivePolicy={!!policy}
+            onClaimCreated={fetchData}
+          />
+        </motion.div>
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.renew-policy]
 verify_jwt = false
+
+[functions.worker-report]
+verify_jwt = false
