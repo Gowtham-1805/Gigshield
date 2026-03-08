@@ -113,6 +113,7 @@ export default function ProfilePage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success('🛡️ Policy renewed!');
+      sendMockWhatsAppPremiumPaid(Number(policy.premium), policy.tier);
       if (data.new_policy) setPolicy(data.new_policy);
     } catch (e: any) {
       toast.error(e.message || 'Renewal failed');
