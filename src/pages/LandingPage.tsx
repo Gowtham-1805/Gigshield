@@ -300,14 +300,14 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           >
             <div className="absolute inset-0 pattern-grid opacity-20" />
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col items-center">
               <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
                 Ready to protect your income?
               </h2>
               <p className="text-primary-foreground/60 text-lg mb-8 max-w-xl mx-auto">
                 Join thousands of gig workers who never worry about lost earnings due to weather or disruptions.
               </p>
-              <Link to="/signup" className="inline-block">
+              <Link to="/signup">
                 <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-base md:text-lg px-6 md:px-10 h-12 md:h-14 hover:opacity-90 shadow-glow-blue font-semibold whitespace-nowrap">
                   Start Now — ₹29/week <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
                 </Button>
