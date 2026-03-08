@@ -37,6 +37,7 @@ interface ZoneForecast {
   peak_risk_day?: string;
   estimated_affected_workers?: number;
   estimated_claims_inr?: number;
+  has_gps_workers?: boolean;
   ai_summary: string;
   daily_risk: DailyRisk[];
 }
