@@ -190,7 +190,7 @@ export default function PredictionsPage() {
                       <p className="text-[10px] text-muted-foreground">Disruptions</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/5 text-center">
-                      <p className="font-display font-bold text-xl text-accent">₹{(totalEstClaims / 1000).toFixed(0)}K</p>
+                      <p className="font-display font-bold text-xl text-accent">₹{totalEstClaims.toLocaleString('en-IN')}</p>
                       <p className="text-[10px] text-muted-foreground">Est. Claims</p>
                     </div>
                   </div>

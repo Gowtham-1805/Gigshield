@@ -163,6 +163,16 @@ serve(async (req) => {
       const cityLabel = city || "all cities";
       const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
+      // Fetch GPS-active workers per zone
+      const { data: gpsWorkers } = await supabase
+        .from("workers")
+        .select("zone_id, last_lat, last_lng")
+        .in("zone_id", zoneIds)
+        .not("last_lat", "is", null)
+        .not("last_lng", "is", null);
+
+      const gpsActiveZones = new Set((gpsWorkers || []).map(w => w.zone_id));
+
       // Fetch policy tier distribution and worker-zone assignment for realistic estimates
       const { data: activePolicies } = await supabase
         .from("policies")
@@ -322,9 +332,11 @@ CRITICAL CLAIM ESTIMATION RULES:
         }, 0);
         // Hard cap: min of tier-based cap or ₹2500, at least ₹100 if any workers
         const maxClaim = wc.total > 0 ? Math.min(tierCap, 2500) : 500;
+        const hasGpsWorkers = gpsActiveZones.has(f.zone_id);
         return {
           ...f,
-          estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
+          estimated_claims_inr: hasGpsWorkers ? Math.min(f.estimated_claims_inr || 0, maxClaim) : null,
+          has_gps_workers: hasGpsWorkers,
         };
       });
       
