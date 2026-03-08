@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Menu, X, Loader2 } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,6 @@ const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄
 export default function WorkerDashboard() {
   const { worker, user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [mobileNav, setMobileNav] = useState(false);
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
   const [zone, setZone] = useState<Tables<'zones'> | null>(null);
@@ -37,45 +36,28 @@ export default function WorkerDashboard() {
     if (!worker) return;
 
     const fetchData = async () => {
-      // Fetch active policy
       const { data: pol } = await supabase
-        .from('policies')
-        .select('*')
-        .eq('worker_id', worker.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .from('policies').select('*').eq('worker_id', worker.id).eq('status', 'active')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
       setPolicy(pol);
 
-      // Fetch claims through policies
       if (pol) {
         const { data: claimsData } = await supabase
-          .from('claims')
-          .select('*')
-          .eq('policy_id', pol.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+          .from('claims').select('*').eq('policy_id', pol.id)
+          .order('created_at', { ascending: false }).limit(10);
         setClaims(claimsData || []);
-
         const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
         const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
         setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
       }
 
-      // Fetch zone
       if (worker.zone_id) {
         const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
         setZone(z);
 
-        // Fetch recent weather reading for alert
         const { data: reading } = await supabase
-          .from('weather_readings')
-          .select('*')
-          .eq('zone_id', worker.zone_id)
-          .order('recorded_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .from('weather_readings').select('*').eq('zone_id', worker.zone_id)
+          .order('recorded_at', { ascending: false }).limit(1).maybeSingle();
 
         if (reading) {
           const alerts: string[] = [];
@@ -91,17 +73,12 @@ export default function WorkerDashboard() {
           }
         }
 
-        // Fetch recent incidents for this zone
         const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
         const { data: incidents } = await supabase
-          .from('incidents')
-          .select('*')
-          .eq('zone_id', worker.zone_id)
-          .gte('created_at', dayAgo)
-          .order('created_at', { ascending: false });
+          .from('incidents').select('*').eq('zone_id', worker.zone_id)
+          .gte('created_at', dayAgo).order('created_at', { ascending: false });
         setRecentIncidents(incidents || []);
 
-        // Fetch proactive prediction alert
         try {
           const { data: predData } = await supabase.functions.invoke('ai-predict', {
             body: { type: 'zone_predictions' },
@@ -120,46 +97,27 @@ export default function WorkerDashboard() {
     };
 
     fetchData();
-
-    // Realtime for claims
-    const channel = supabase
-      .channel('worker-claims')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, () => {
-        fetchData();
-      })
+    const channel = supabase.channel('worker-claims')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, () => fetchData())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [worker]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   const handleRenew = async () => {
     if (!policy) return;
     setRenewing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('renew-policy', {
-        body: { policy_id: policy.id },
-      });
+      const { data, error } = await supabase.functions.invoke('renew-policy', { body: { policy_id: policy.id } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success('🛡️ Policy renewed for another week!');
-      // Refresh data
       const { data: newPol } = await supabase
-        .from('policies')
-        .select('*')
-        .eq('worker_id', worker!.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .from('policies').select('*').eq('worker_id', worker!.id).eq('status', 'active')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
       setPolicy(newPol);
-    } catch (e: any) {
-      toast.error(e.message || 'Renewal failed');
-    }
+    } catch (e: any) { toast.error(e.message || 'Renewal failed'); }
     setRenewing(false);
   };
 
@@ -170,25 +128,22 @@ export default function WorkerDashboard() {
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
+  const daysLeft = policy ? Math.max(0, Math.ceil((new Date(policy.end_date).getTime() - Date.now()) / 86400000)) : 0;
+
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Top Bar */}
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="flex items-center justify-between h-14 px-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg gradient-shield flex items-center justify-center">
+      <header className="sticky top-0 z-50 glass border-b border-border/30">
+        <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl gradient-shield flex items-center justify-center shadow-glow-blue">
               <Shield className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-sm">GigShield</span>
+            <span className="font-display font-bold text-sm tracking-tight">GigShield</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
-              <LogOut className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileNav(!mobileNav)}>
-              {mobileNav ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </header>
 
@@ -202,29 +157,37 @@ export default function WorkerDashboard() {
         {/* Active Plan Card */}
         {policy ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="gradient-shield text-primary-foreground overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary-foreground/5 -translate-y-8 translate-x-8" />
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
+            <Card className="overflow-hidden relative border-0 shadow-elevated">
+              <div className="absolute inset-0 gradient-hero" />
+              <div className="absolute inset-0 pattern-grid opacity-20" />
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-primary/20 -translate-y-12 translate-x-12 blur-2xl" />
+              <CardContent className="relative p-6 text-primary-foreground">
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-xs opacity-80">Active Plan</p>
-                    <p className="font-display font-bold text-lg">{policy.tier}</p>
+                    <p className="text-xs text-primary-foreground/50 uppercase tracking-wider font-medium">Active Plan</p>
+                    <p className="font-display font-bold text-2xl mt-1">{policy.tier}</p>
                   </div>
-                  <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
-                    Coverage Active ✅
+                  <Badge className="bg-secondary/20 text-secondary-foreground border-0 backdrop-blur-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-safety-green mr-1.5 animate-pulse" />
+                    Active
                   </Badge>
                 </div>
-                <p className="text-xs opacity-70">
-                  Valid until: {policy.start_date} → {policy.end_date}
-                </p>
-                <div className="flex gap-4 mt-4">
-                  <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
+                <div className="flex items-center gap-2 text-xs text-primary-foreground/40 mb-4">
+                  <span>{policy.start_date}</span>
+                  <span>→</span>
+                  <span>{policy.end_date}</span>
+                  <Badge variant="outline" className={`ml-auto border-primary-foreground/20 text-primary-foreground/70 text-[10px] ${daysLeft <= 2 ? 'border-destructive/50 text-destructive' : ''}`}>
+                    {daysLeft}d left
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-primary-foreground/10 backdrop-blur-sm p-3 text-center border border-primary-foreground/5">
                     <p className="font-display font-bold text-xl">₹{claimedThisWeek.toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">Claimed this week</p>
+                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">Claimed this week</p>
                   </div>
-                  <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
+                  <div className="rounded-xl bg-primary-foreground/10 backdrop-blur-sm p-3 text-center border border-primary-foreground/5">
                     <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">Max coverage</p>
+                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">Max coverage</p>
                   </div>
                 </div>
               </CardContent>
@@ -232,10 +195,15 @@ export default function WorkerDashboard() {
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="shadow-card border-accent/30">
-              <CardContent className="p-5 text-center">
-                <p className="text-muted-foreground mb-3">No active plan yet</p>
-                <Button className="gradient-shield text-primary-foreground border-0">Get Protected Now</Button>
+            <Card className="shadow-card border-accent/20 gradient-subtle">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Shield className="w-6 h-6 text-primary" />
+                </div>
+                <p className="text-muted-foreground mb-4">No active plan yet</p>
+                <Link to="/signup">
+                  <Button className="gradient-shield text-primary-foreground border-0 shadow-glow-blue">Get Protected Now</Button>
+                </Link>
               </CardContent>
             </Card>
           </motion.div>
@@ -243,16 +211,30 @@ export default function WorkerDashboard() {
 
         {/* Shield Score */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="shadow-card">
+          <Card className="shadow-card border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display">Shield Score</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                </div>
+                Shield Score
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <ShieldScoreGauge score={worker?.shield_score || 50} />
-              <div className="text-right text-sm text-muted-foreground space-y-1">
-                <p>Zone: {zone?.name || worker?.city || 'N/A'}</p>
-                <p>Platform: {worker?.platform || 'N/A'}</p>
-                <p>Avg ₹{Number(worker?.weekly_earnings || 0).toLocaleString()}/week</p>
+              <div className="text-right text-sm space-y-2">
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground">Zone</p>
+                  <p className="font-medium text-xs">{zone?.name || worker?.city || 'N/A'}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground">Platform</p>
+                  <p className="font-medium text-xs">{worker?.platform || 'N/A'}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground">Weekly Earnings</p>
+                  <p className="font-medium text-xs">₹{Number(worker?.weekly_earnings || 0).toLocaleString()}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -261,14 +243,15 @@ export default function WorkerDashboard() {
         {/* Proactive AI Alert */}
         {proactiveAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-            <Card className="shadow-card border-primary/30 bg-primary/5">
-              <CardContent className="p-4 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xl">
+            <Card className="shadow-card border-primary/20 bg-primary/5 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-primary/10 -translate-y-6 translate-x-6 blur-xl" />
+              <CardContent className="p-4 flex items-start gap-3 relative">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-lg">
                   🔮
                 </div>
                 <div>
                   <p className="font-display font-semibold text-sm text-primary">AI Prediction</p>
-                  <p className="text-sm text-muted-foreground mt-1">{proactiveAlert}</p>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{proactiveAlert}</p>
                 </div>
               </CardContent>
             </Card>
@@ -278,14 +261,18 @@ export default function WorkerDashboard() {
         {/* Weather Alert */}
         {weatherAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className={`shadow-card ${weatherAlert.icon === '⚠️' ? 'border-accent/30 bg-accent/5' : 'border-secondary/30 bg-secondary/5'}`}>
+            <Card className={`shadow-card overflow-hidden relative ${
+              weatherAlert.icon === '⚠️' ? 'border-accent/20 bg-accent/5' : 'border-secondary/20 bg-secondary/5'
+            }`}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 text-xl">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg ${
+                  weatherAlert.icon === '⚠️' ? 'bg-accent/10' : 'bg-secondary/10'
+                }`}>
                   {weatherAlert.icon}
                 </div>
                 <div>
                   <p className="font-display font-semibold text-sm">Weather Alert</p>
-                  <p className="text-sm text-muted-foreground mt-1">{weatherAlert.text}</p>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{weatherAlert.text}</p>
                 </div>
               </CardContent>
             </Card>
@@ -295,16 +282,21 @@ export default function WorkerDashboard() {
         {/* Recent Incidents */}
         {recentIncidents.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <Card className="shadow-card border-destructive/20">
+            <Card className="shadow-card border-destructive/15 bg-destructive/3">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-display text-destructive">🚨 Recent Incidents in Your Zone</CardTitle>
+                <CardTitle className="text-base font-display text-destructive flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
+                    <Bell className="w-3.5 h-3.5 text-destructive" />
+                  </div>
+                  Recent Incidents
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {recentIncidents.slice(0, 3).map((inc) => {
                   const trigger = triggerTypes.find(t => t.id === inc.trigger_type);
                   return (
-                    <div key={inc.id} className="flex items-center justify-between py-1.5 text-sm">
-                      <span>{trigger?.icon} {trigger?.label} — Severity {inc.severity}%</span>
+                    <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/50 text-sm">
+                      <span className="font-medium">{trigger?.icon} {trigger?.label} — {inc.severity}%</span>
                       <span className="text-xs text-muted-foreground">{new Date(inc.created_at).toLocaleTimeString()}</span>
                     </div>
                   );
@@ -316,26 +308,31 @@ export default function WorkerDashboard() {
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <Card className="shadow-card">
+          <Card className="shadow-card border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Recent Activity</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-display">Recent Activity</CardTitle>
+                <Link to="/claims" className="text-xs text-primary font-medium hover:underline">View all →</Link>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {claims.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No claims yet. Stay protected! 🛡️</p>
+                <p className="text-sm text-muted-foreground text-center py-6">No claims yet. Stay protected! 🛡️</p>
               )}
               {claims.slice(0, 4).map((claim) => {
                 const trigger = triggerTypes.find(tt => tt.id === claim.trigger_type);
                 return (
-                  <div key={claim.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div key={claim.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <span className="text-lg">{statusIcons[claim.status] || '🔄'}</span>
+                      <div className="w-9 h-9 rounded-lg bg-card flex items-center justify-center text-base shadow-sm">
+                        {statusIcons[claim.status] || '🔄'}
+                      </div>
                       <div>
-                        <p className="text-sm font-medium">₹{Number(claim.amount)} {trigger?.icon} {trigger?.label}</p>
+                        <p className="text-sm font-medium">₹{Number(claim.amount)} · {trigger?.label}</p>
                         <p className="text-xs text-muted-foreground">{new Date(claim.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`text-xs ${statusColors[claim.status] || ''}`}>
+                    <Badge variant="outline" className={`text-[10px] ${statusColors[claim.status] || ''}`}>
                       {claim.status}
                     </Badge>
                   </div>
@@ -348,14 +345,14 @@ export default function WorkerDashboard() {
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button 
-            className="gradient-shield text-primary-foreground border-0 h-12"
+            className="gradient-shield text-primary-foreground border-0 h-12 shadow-glow-blue font-semibold"
             onClick={handleRenew}
             disabled={renewing || !policy}
           >
-            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>Renew Plan {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
+            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>Renew Plan</>}
           </Button>
           <Link to="/claims">
-            <Button variant="outline" className="h-12 w-full">
+            <Button variant="outline" className="h-12 w-full font-semibold border-border/50">
               Claim History
             </Button>
           </Link>
@@ -363,16 +360,18 @@ export default function WorkerDashboard() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border md:hidden">
-        <div className="flex items-center justify-around h-16">
+      <nav className="fixed bottom-0 inset-x-0 z-50 glass-dark border-t border-border/10 md:hidden safe-area-bottom">
+        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.path}
-              className={`flex flex-col items-center gap-1 px-3 py-2 text-xs ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                item.active ? 'text-primary' : 'text-primary-foreground/40 hover:text-primary-foreground/60'
+              }`}
             >
               <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           ))}
         </div>

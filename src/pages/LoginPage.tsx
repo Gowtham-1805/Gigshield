@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft, Lock, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,11 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    // Check if admin
+    if (error) { toast.error(error.message); return; }
     if (data.user) {
       const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: data.user.id, _role: 'admin' });
       toast.success('Welcome back!');
@@ -34,21 +30,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-0 -right-32 w-80 h-80 rounded-full bg-secondary/5 blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 gradient-hero" />
+      <div className="absolute inset-0 pattern-grid opacity-20" />
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-secondary/8 blur-[100px]" />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
-        <Link to="/" className="flex items-center gap-2 mb-8 text-muted-foreground hover:text-foreground transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 mb-8 text-primary-foreground/50 hover:text-primary-foreground/80 transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Back to home
         </Link>
 
-        <Card className="shadow-elevated">
-          <CardHeader className="text-center">
-            <div className="w-12 h-12 rounded-xl gradient-shield flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-7 h-7 text-primary-foreground" />
+        <Card className="shadow-elevated border-border/30 backdrop-blur-sm bg-card/95">
+          <CardHeader className="text-center pb-2">
+            <div className="w-14 h-14 rounded-2xl gradient-shield flex items-center justify-center mx-auto mb-4 shadow-glow-blue">
+              <Shield className="w-8 h-8 text-primary-foreground" />
             </div>
             <CardTitle className="font-display text-2xl">Welcome back</CardTitle>
             <CardDescription>Sign in to your GigShield account</CardDescription>
@@ -56,12 +53,15 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-11" />
+                </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                   <button
                     type="button"
                     onClick={async () => {
@@ -70,22 +70,25 @@ export default function LoginPage() {
                         redirectTo: `${window.location.origin}/reset-password`,
                       });
                       if (error) toast.error(error.message);
-                      else toast.success('Password reset email sent! Check your inbox.');
+                      else toast.success('Password reset email sent!');
                     }}
-                    className="text-xs text-primary hover:underline"
+                    className="text-xs text-primary hover:underline font-medium"
                   >
                     Forgot password?
                   </button>
                 </div>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="pl-10 h-11" />
+                </div>
               </div>
-              <Button type="submit" className="w-full gradient-shield text-primary-foreground border-0 h-11" disabled={loading}>
+              <Button type="submit" className="w-full gradient-shield text-primary-foreground border-0 h-12 shadow-glow-blue font-semibold text-base" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
             <p className="text-center text-sm text-muted-foreground mt-6">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-primary font-medium hover:underline">Sign up</Link>
+              <Link to="/signup" className="text-primary font-semibold hover:underline">Sign up</Link>
             </p>
           </CardContent>
         </Card>
