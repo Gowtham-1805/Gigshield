@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Shield, ArrowLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
@@ -20,7 +21,7 @@ const platforms = [
   { id: 'Other', label: 'Other', icon: '📦' },
 ];
 
-const planOptions = [
+const defaultPlanOptions = [
   { tier: 'BASIC' as const, price: '₹29–49', premium: 39, payout: 1500, desc: 'Weather only' },
   { tier: 'STANDARD' as const, price: '₹49–79', premium: 64, payout: 2500, desc: 'Weather + AQI', recommended: true },
   { tier: 'PRO' as const, price: '₹79–129', premium: 99, payout: 4000, desc: 'Full coverage' },
@@ -36,6 +37,9 @@ export default function SignupPage() {
   const [selectedPlan, setSelectedPlan] = useState('STANDARD');
   const [loading, setLoading] = useState(false);
   const [zones, setZones] = useState<Tables<'zones'>[]>([]);
+  const [aiPremiums, setAiPremiums] = useState<{ tier: string; premium: number; price: string; payout: number; desc: string; recommended?: boolean }[] | null>(null);
+  const [aiRecommendation, setAiRecommendation] = useState<{ recommended_tier: string; reason: string; savings_tip: string } | null>(null);
+  const [loadingPremiums, setLoadingPremiums] = useState(false);
   const navigate = useNavigate();
 
   const stepIndex = steps.indexOf(step);
@@ -43,6 +47,60 @@ export default function SignupPage() {
   useEffect(() => {
     supabase.from('zones').select('*').order('city').then(({ data }) => setZones(data || []));
   }, []);
+
+  // Fetch AI premiums when zone is selected and we move to plan step
+  useEffect(() => {
+    if (step !== 'plan' || !zoneId) return;
+    
+    const fetchAIPremiums = async () => {
+      setLoadingPremiums(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: workerData } = await supabase
+          .from('workers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!workerData) return;
+
+        const { data, error } = await supabase.functions.invoke('calculate-premium', {
+          body: { worker_id: workerData.id, zone_id: zoneId },
+        });
+
+        if (error || !data) throw error;
+
+        const premiumData = data.premiums as Record<string, number>;
+        const plans = [
+          { tier: 'BASIC', premium: premiumData.BASIC, price: `₹${premiumData.BASIC}`, payout: 1500, desc: 'Weather only' },
+          { tier: 'STANDARD', premium: premiumData.STANDARD, price: `₹${premiumData.STANDARD}`, payout: 2500, desc: 'Weather + AQI' },
+          { tier: 'PRO', premium: premiumData.PRO, price: `₹${premiumData.PRO}`, payout: 4000, desc: 'Full coverage' },
+        ];
+
+        if (data.recommendation) {
+          setAiRecommendation(data.recommendation);
+          plans.forEach(p => {
+            if (p.tier === data.recommendation.recommended_tier) {
+              (p as any).recommended = true;
+            }
+          });
+          setSelectedPlan(data.recommendation.recommended_tier);
+        }
+
+        setAiPremiums(plans);
+      } catch (e) {
+        console.error('AI premium error:', e);
+        // Fallback to defaults
+      }
+      setLoadingPremiums(false);
+    };
+
+    fetchAIPremiums();
+  }, [step, zoneId]);
+
+  const planOptions = aiPremiums || defaultPlanOptions;
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +154,7 @@ export default function SignupPage() {
 
       await supabase.from('policies').insert({
         worker_id: workerData.id,
-        tier: plan.tier,
+        tier: plan.tier as any,
         premium: plan.premium,
         max_payout: plan.payout,
         start_date: startDate.toISOString().split('T')[0],
@@ -210,6 +268,24 @@ export default function SignupPage() {
 
             {step === 'plan' && (
               <div className="space-y-3">
+                {/* AI Recommendation Banner */}
+                {loadingPremiums && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span className="text-primary">AI calculating your personalized premiums...</span>
+                  </div>
+                )}
+                {aiRecommendation && !loadingPremiums && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium text-primary">AI Recommendation</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{aiRecommendation.reason}</p>
+                    <p className="text-xs text-primary/70 mt-1">💡 {aiRecommendation.savings_tip}</p>
+                  </motion.div>
+                )}
+
                 {planOptions.map((p) => (
                   <button
                     key={p.tier}
@@ -218,9 +294,9 @@ export default function SignupPage() {
                       selectedPlan === p.tier ? 'border-primary bg-primary/5' : 'border-border'
                     } relative`}
                   >
-                    {p.recommended && (
-                      <span className="absolute -top-2.5 right-3 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium">
-                        Recommended
+                    {(p as any).recommended && (
+                      <span className="absolute -top-2.5 right-3 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        {aiPremiums ? <><Sparkles className="w-3 h-3" /> AI Recommended</> : 'Recommended'}
                       </span>
                     )}
                     <div className="flex justify-between items-center">
@@ -229,7 +305,7 @@ export default function SignupPage() {
                         <p className="text-xs text-muted-foreground">{p.desc}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-display font-bold text-primary">{p.price}</p>
+                        <p className="font-display font-bold text-primary">{p.price}/wk</p>
                         <p className="text-xs text-muted-foreground">max ₹{p.payout.toLocaleString()}/wk</p>
                       </div>
                     </div>
@@ -248,7 +324,7 @@ export default function SignupPage() {
             {step === 'account' && (
               <p className="text-center text-sm text-muted-foreground mt-6">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary font-medium hover:underline">Sign up</Link>
+                <Link to="/login" className="text-primary font-medium hover:underline">Login</Link>
               </p>
             )}
           </CardContent>

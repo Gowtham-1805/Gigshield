@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Menu, X } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Menu, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors = {
@@ -32,6 +33,8 @@ export default function WorkerDashboard() {
   const [claimedThisWeek, setClaimedThisWeek] = useState(0);
   const [weatherAlert, setWeatherAlert] = useState<{ text: string; icon: string } | null>(null);
   const [recentIncidents, setRecentIncidents] = useState<Tables<'incidents'>[]>([]);
+  const [proactiveAlert, setProactiveAlert] = useState<string | null>(null);
+  const [renewing, setRenewing] = useState(false);
 
   useEffect(() => {
     if (!worker) return;
@@ -100,6 +103,22 @@ export default function WorkerDashboard() {
           .gte('created_at', dayAgo)
           .order('created_at', { ascending: false });
         setRecentIncidents(incidents || []);
+
+        // Fetch proactive prediction alert
+        try {
+          const { data: predData } = await supabase.functions.invoke('ai-predict', {
+            body: { type: 'zone_predictions' },
+          });
+          if (predData?.predictions) {
+            const zoneCity = z?.city;
+            const cityPred = predData.predictions.find((p: any) => p.city === zoneCity);
+            if (cityPred && cityPred.probability > 50) {
+              setProactiveAlert(`⚠️ ${cityPred.event} expected in your area (${cityPred.probability}% chance). Your coverage will auto-apply if confirmed.`);
+            }
+          }
+        } catch (e) {
+          console.error('Prediction alert error:', e);
+        }
       }
     };
 
@@ -119,6 +138,32 @@ export default function WorkerDashboard() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleRenew = async () => {
+    if (!policy) return;
+    setRenewing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('renew-policy', {
+        body: { policy_id: policy.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('🛡️ Policy renewed for another week!');
+      // Refresh data
+      const { data: newPol } = await supabase
+        .from('policies')
+        .select('*')
+        .eq('worker_id', worker!.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setPolicy(newPol);
+    } catch (e: any) {
+      toast.error(e.message || 'Renewal failed');
+    }
+    setRenewing(false);
   };
 
   const navItems = [
@@ -217,6 +262,23 @@ export default function WorkerDashboard() {
           </Card>
         </motion.div>
 
+        {/* Proactive AI Alert */}
+        {proactiveAlert && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <Card className="shadow-card border-primary/30 bg-primary/5">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xl">
+                  🔮
+                </div>
+                <div>
+                  <p className="font-display font-semibold text-sm text-primary">AI Prediction</p>
+                  <p className="text-sm text-muted-foreground mt-1">{proactiveAlert}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Weather Alert */}
         {weatherAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -289,8 +351,12 @@ export default function WorkerDashboard() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <Button className="gradient-shield text-primary-foreground border-0 h-12">
-            {t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}
+          <Button 
+            className="gradient-shield text-primary-foreground border-0 h-12"
+            onClick={handleRenew}
+            disabled={renewing || !policy}
+          >
+            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>{t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full">
