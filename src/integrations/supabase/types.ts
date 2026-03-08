@@ -106,6 +106,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           amount: number
@@ -352,6 +385,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       claim_status: "approved" | "processing" | "flagged" | "rejected"
+      notification_type: "weather" | "claim" | "payout"
       payout_status: "pending" | "completed" | "failed"
       policy_status: "active" | "expired" | "cancelled"
       policy_tier: "BASIC" | "STANDARD" | "PRO"
@@ -491,6 +525,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       claim_status: ["approved", "processing", "flagged", "rejected"],
+      notification_type: ["weather", "claim", "payout"],
       payout_status: ["pending", "completed", "failed"],
       policy_status: ["active", "expired", "cancelled"],
       policy_tier: ["BASIC", "STANDARD", "PRO"],

@@ -18,6 +18,7 @@ import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
@@ -118,10 +119,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
-            </Button>
+            <NotificationBell />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
             </Button>

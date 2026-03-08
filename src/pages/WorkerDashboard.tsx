@@ -12,6 +12,7 @@ import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationBell } from '@/components/NotificationBell';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -157,6 +158,7 @@ export default function WorkerDashboard() {
             <span className="font-display font-bold text-sm tracking-tight">GigShield</span>
           </div>
           <div className="flex items-center gap-1">
+            <NotificationBell />
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
