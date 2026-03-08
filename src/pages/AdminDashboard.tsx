@@ -138,7 +138,7 @@ export default function AdminDashboard() {
               {activeTab === 'overview' && <OverviewTab stats={stats} />}
               {activeTab === 'claims' && <ClaimsTab />}
               {activeTab === 'appeals' && <AppealsTab />}
-              {activeTab === 'fraud' && <FraudTab />}
+              {activeTab === 'payouts' && <PayoutsTab />}
               {activeTab === 'predictions' && <PredictionsTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
