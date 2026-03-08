@@ -31,6 +31,14 @@ const COLORS = [
   'hsl(0, 84%, 60%)', 'hsl(280, 60%, 55%)', 'hsl(190, 70%, 45%)',
 ];
 
+// Recharts SVG fill doesn't resolve CSS vars; use actual HSL values
+const CHART_COLORS = {
+  secondary: 'hsl(160, 84%, 39%)',
+  destructive: 'hsl(0, 84%, 60%)',
+  accent: 'hsl(38, 92%, 50%)',
+  primary: 'hsl(221, 83%, 53%)',
+};
+
 export default function CohortAnalyticsTab() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
