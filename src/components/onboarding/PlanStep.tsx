@@ -96,6 +96,7 @@ export function PlanStep({ zoneId, selectedPlan, setSelectedPlan, onFinish, load
 
   const handlePayDone = () => {
     setPayStage('idle');
+    sendMockWhatsAppPremiumPaid(chosenPlan.premium, chosenPlan.tier);
     onFinish();
   };
 
