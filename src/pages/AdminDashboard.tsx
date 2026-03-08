@@ -1052,10 +1052,14 @@ function FinancialTab() {
       const monthMap: Record<string, { premium: number; claims: number }> = {};
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+      const now = new Date();
       (policiesRes.data || []).forEach(p => {
-        const m = months[new Date(p.created_at).getMonth()];
+        const createdAt = new Date(p.created_at);
+        const weeksActive = Math.max(1, Math.ceil((now.getTime() - createdAt.getTime()) / (7 * 24 * 60 * 60 * 1000)));
+        const totalCollected = Number(p.premium) * weeksActive;
+        const m = months[createdAt.getMonth()];
         if (!monthMap[m]) monthMap[m] = { premium: 0, claims: 0 };
-        monthMap[m].premium += Number(p.premium);
+        monthMap[m].premium += totalCollected;
       });
 
       const approvedClaims = (claimsRes.data || []).filter(c => c.status === 'approved');
