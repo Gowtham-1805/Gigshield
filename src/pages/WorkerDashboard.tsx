@@ -346,32 +346,18 @@ export default function WorkerDashboard() {
       {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 inset-x-0 z-50 glass-dark border-t border-border/10 md:hidden safe-area-bottom">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-          {navItems.map((item) => {
-            if (item.scrollTo) {
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => document.getElementById(item.scrollTo!)?.scrollIntoView({ behavior: 'smooth' })}
-                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors text-primary-foreground/40 hover:text-primary-foreground/60`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={item.label}
-                to={item.path}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
-                  item.active ? 'text-primary' : 'text-primary-foreground/40 hover:text-primary-foreground/60'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                item.active ? 'text-primary' : 'text-primary-foreground/40 hover:text-primary-foreground/60'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </Link>
+          ))}
         </div>
       </nav>
     </div>
