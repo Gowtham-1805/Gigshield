@@ -56,7 +56,8 @@ export default function TransparencyLedger() {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [mainTab, setMainTab] = useState('approved');
+  const [approvedSub, setApprovedSub] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
