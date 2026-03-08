@@ -18,6 +18,7 @@ import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
+import TransparencyLedger from '@/components/TransparencyLedger';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
