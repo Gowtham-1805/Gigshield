@@ -7,6 +7,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const GPS_RADIUS_KM = 10;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -31,16 +42,30 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { action, trigger_type, incident_id } = await req.json();
+    const { action, trigger_type, incident_id, lat, lng } = await req.json();
 
     // Get worker
     const { data: worker, error: workerErr } = await supabase
       .from("workers")
-      .select("id, zone_id, weekly_earnings, shield_score, name, platform")
+      .select("id, zone_id, weekly_earnings, shield_score, name, platform, last_lat, last_lng")
       .eq("user_id", userId)
       .single();
     if (workerErr || !worker) throw new Error("Worker profile not found");
-    if (!worker.zone_id) throw new Error("No zone assigned to your profile");
+
+    // Update GPS if provided
+    if (lat && lng) {
+      await supabase.from("workers").update({
+        last_lat: lat,
+        last_lng: lng,
+        last_location_at: new Date().toISOString(),
+      }).eq("id", worker.id);
+      worker.last_lat = lat;
+      worker.last_lng = lng;
+    }
+
+    // Determine the effective zone: use GPS to find nearest zone if worker has location
+    const workerLat = worker.last_lat || null;
+    const workerLng = worker.last_lng || null;
 
     // Get active policy
     const { data: policy, error: polErr } = await supabase
@@ -74,20 +99,50 @@ serve(async (req) => {
     if ((recentClaims || []).length >= 3) throw new Error("You've reached the maximum of 3 claims this week.");
 
     let incidentRecord: any;
+    let gpsMethod = "registered_zone";
+    let gpsDistance = 0;
 
     if (action === "report_disruption") {
-      // Worker reports a new disruption
       if (!trigger_type) throw new Error("trigger_type is required");
 
-      // Create incident (worker-reported)
+      // Use GPS zone if available, otherwise registered zone
+      let effectiveZoneId = worker.zone_id;
+      if (workerLat && workerLng) {
+        const { data: zones } = await supabase.from("zones").select("id, lat, lng, name").limit(100);
+        if (zones) {
+          let nearest = null;
+          let nearestDist = Infinity;
+          for (const z of zones) {
+            const d = haversineKm(workerLat, workerLng, z.lat, z.lng);
+            if (d < nearestDist) {
+              nearestDist = d;
+              nearest = z;
+            }
+          }
+          if (nearest && nearestDist <= GPS_RADIUS_KM) {
+            effectiveZoneId = nearest.id;
+            gpsMethod = "gps_nearest_zone";
+            gpsDistance = nearestDist;
+          }
+        }
+      }
+
+      if (!effectiveZoneId) throw new Error("No zone assigned and no GPS location available.");
+
       const { data: inc, error: incErr } = await supabase
         .from("incidents")
         .insert({
-          zone_id: worker.zone_id,
+          zone_id: effectiveZoneId,
           trigger_type,
           severity: 60,
           is_simulated: false,
-          weather_data: { source: "worker_report", reported_by: userId },
+          weather_data: {
+            source: "worker_report",
+            reported_by: userId,
+            gps_lat: workerLat,
+            gps_lng: workerLng,
+            gps_method: gpsMethod,
+          },
         })
         .select()
         .single();
@@ -95,7 +150,6 @@ serve(async (req) => {
       incidentRecord = inc;
 
     } else if (action === "file_claim") {
-      // Worker files claim on existing incident
       if (!incident_id) throw new Error("incident_id is required");
 
       const { data: inc, error: incErr } = await supabase
@@ -105,8 +159,22 @@ serve(async (req) => {
         .single();
       if (incErr || !inc) throw new Error("Incident not found");
 
-      // Verify incident is in worker's zone
-      if (inc.zone_id !== worker.zone_id) throw new Error("This incident is not in your zone.");
+      // GPS-based zone matching: check if worker is near the incident zone
+      let isInZone = inc.zone_id === worker.zone_id; // registered zone match
+      if (!isInZone && workerLat && workerLng) {
+        const { data: incZone } = await supabase.from("zones").select("lat, lng").eq("id", inc.zone_id).single();
+        if (incZone) {
+          gpsDistance = haversineKm(workerLat, workerLng, incZone.lat, incZone.lng);
+          if (gpsDistance <= GPS_RADIUS_KM) {
+            isInZone = true;
+            gpsMethod = "gps_proximity";
+          }
+        }
+      }
+
+      if (!isInZone) {
+        throw new Error("This incident is not in your zone and you're not GPS-nearby. Share your location to claim in other zones.");
+      }
 
       // Check incident is recent (last 24 hours)
       const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
@@ -130,15 +198,16 @@ serve(async (req) => {
       Number(policy.max_payout)
     );
 
-    // Basic fraud scoring for worker-reported claims
+    // Fraud scoring
     const weeklyEarnings = Number(worker.weekly_earnings || 0);
     const earningsExceeded = weeklyEarnings > 0 && amount > weeklyEarnings * 1.2;
-    const baseFraud = action === "report_disruption" ? 0.15 : 0.05; // worker reports get slightly higher base
-    const fraudScore = Math.min(1, baseFraud + (earningsExceeded ? 0.3 : 0));
+    const baseFraud = action === "report_disruption" ? 0.15 : 0.05;
+    const gpsPenalty = gpsMethod === "gps_proximity" ? Math.min(0.1, gpsDistance * 0.01) : 0;
+    const fraudScore = Math.min(1, baseFraud + (earningsExceeded ? 0.3 : 0) + gpsPenalty);
 
     let status: string;
     if (fraudScore > 0.5) status = "flagged";
-    else if (action === "report_disruption") status = "processing"; // worker reports need verification
+    else if (action === "report_disruption") status = "processing";
     else status = "approved";
 
     // Create claim
@@ -154,6 +223,11 @@ serve(async (req) => {
         fraud_details: {
           source: action === "report_disruption" ? "worker_report" : "existing_incident",
           gps_match: true,
+          gps_method: gpsMethod,
+          gps_distance_km: parseFloat(gpsDistance.toFixed(2)),
+          gps_radius_km: GPS_RADIUS_KM,
+          gps_lat: workerLat,
+          gps_lng: workerLng,
           weather_confirmed: action === "file_claim",
           velocity_ok: true,
           duplicate_check: "passed",
@@ -187,6 +261,11 @@ serve(async (req) => {
       success: true,
       claim,
       payout,
+      gps_info: {
+        method: gpsMethod,
+        distance_km: parseFloat(gpsDistance.toFixed(2)),
+        worker_location: workerLat && workerLng ? { lat: workerLat, lng: workerLng } : null,
+      },
       message: status === "approved"
         ? `Claim approved! ₹${amount} will be disbursed shortly.`
         : status === "processing"

@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
+import GpsLocationCard from '@/components/GpsLocationCard';
 import { toast } from 'sonner';
 import { sendMockWhatsAppPremiumPaid } from '@/lib/whatsapp-mock';
 import type { Tables } from '@/integrations/supabase/types';
@@ -90,11 +91,38 @@ export default function WorkerDashboard() {
         }
       }
 
+      // Fetch incidents: from registered zone AND GPS-nearby zones
       const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
       const { data: incidents } = await supabase
-        .from('incidents').select('*').eq('zone_id', worker.zone_id)
+        .from('incidents').select('*')
         .gte('created_at', dayAgo).order('created_at', { ascending: false });
-      setRecentIncidents(incidents || []);
+      
+      // Filter to registered zone + GPS-nearby zones
+      if (incidents && worker) {
+        let eligibleIncidents = incidents.filter(i => i.zone_id === worker.zone_id);
+        
+        // If worker has GPS, also include incidents from nearby zones
+        if (worker.last_lat && worker.last_lng) {
+          const { data: zones } = await supabase.from('zones').select('id, lat, lng');
+          if (zones) {
+            const nearbyZoneIds = zones.filter(z => {
+              const R = 6371;
+              const dLat = (z.lat - (worker.last_lat as number)) * Math.PI / 180;
+              const dLng = (z.lng - (worker.last_lng as number)) * Math.PI / 180;
+              const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos((worker.last_lat as number) * Math.PI / 180) * Math.cos(z.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+              const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              return dist <= 10 && z.id !== worker.zone_id;
+            }).map(z => z.id);
+            
+            const nearbyIncidents = incidents.filter(i => nearbyZoneIds.includes(i.zone_id));
+            eligibleIncidents = [...eligibleIncidents, ...nearbyIncidents];
+          }
+        }
+        setRecentIncidents(eligibleIncidents);
+      } else {
+        setRecentIncidents([]);
+      }
 
       try {
         const { data: predData } = await supabase.functions.invoke('ai-predict', {
@@ -281,6 +309,18 @@ export default function WorkerDashboard() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* GPS Location Card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <GpsLocationCard
+            workerId={worker?.id || ''}
+            workerZoneName={zone?.name}
+            lastLat={(worker as any)?.last_lat}
+            lastLng={(worker as any)?.last_lng}
+            lastLocationAt={(worker as any)?.last_location_at}
+            onLocationUpdated={fetchData}
+          />
         </motion.div>
 
         {/* Proactive AI Alert */}

@@ -335,6 +335,9 @@ export type Database = {
           city: string
           created_at: string
           id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_location_at: string | null
           name: string
           phone: string | null
           platform: string
@@ -348,6 +351,9 @@ export type Database = {
           city?: string
           created_at?: string
           id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_location_at?: string | null
           name: string
           phone?: string | null
           platform?: string
@@ -361,6 +367,9 @@ export type Database = {
           city?: string
           created_at?: string
           id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_location_at?: string | null
           name?: string
           phone?: string | null
           platform?: string
