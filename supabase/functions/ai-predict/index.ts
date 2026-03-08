@@ -332,9 +332,11 @@ CRITICAL CLAIM ESTIMATION RULES:
         }, 0);
         // Hard cap: min of tier-based cap or ₹2500, at least ₹100 if any workers
         const maxClaim = wc.total > 0 ? Math.min(tierCap, 2500) : 500;
+        const hasGpsWorkers = gpsActiveZones.has(f.zone_id);
         return {
           ...f,
-          estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
+          estimated_claims_inr: hasGpsWorkers ? Math.min(f.estimated_claims_inr || 0, maxClaim) : null,
+          has_gps_workers: hasGpsWorkers,
         };
       });
       
