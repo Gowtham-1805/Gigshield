@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Shield, CreditCard, MapPin, Smartphone, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Shield, CreditCard, MapPin, Smartphone, Save, Loader2, TrendingUp, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -180,6 +180,24 @@ export default function ProfilePage() {
               ))}
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Earnings Impact Report Link */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+          <Link to="/earnings">
+            <Card className="shadow-card border-secondary/20 hover:border-secondary/40 transition-colors cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-secondary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-display font-semibold text-sm">Earnings Impact Report</h3>
+                  <p className="text-xs text-muted-foreground">See how much GigShield saved you</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
         </motion.div>
       </main>
     </div>

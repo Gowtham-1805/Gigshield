@@ -141,7 +141,6 @@ export default function WorkerDashboard() {
     { icon: Home, label: 'Home', active: true, path: '/worker' },
     { icon: FileText, label: 'Claims', path: '/claims' },
     { icon: Brain, label: 'Forecast', path: '/predictions' },
-    { icon: TrendingUp, label: 'Impact', path: '/earnings' },
     { icon: Bell, label: 'Alerts', path: '/alerts' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
