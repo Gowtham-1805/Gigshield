@@ -87,8 +87,21 @@ export default function PredictionsPage() {
         }
       }
 
+      // Pass worker's city to get city-scoped predictions
+      const { data: workerData } = await supabase
+        .from('workers')
+        .select('city, zone_id')
+        .eq('user_id', user?.id ?? '')
+        .single();
+      
+      const city = workerData?.city || workerCity;
+      if (workerData) {
+        setWorkerCity(workerData.city);
+        setWorkerZoneId(workerData.zone_id);
+      }
+
       const { data, error } = await supabase.functions.invoke('ai-predict', {
-        body: { type: 'zone_detailed_forecast' },
+        body: { type: 'zone_detailed_forecast', data: { city } },
       });
 
       if (error) throw error;
