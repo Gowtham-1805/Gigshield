@@ -1189,7 +1189,7 @@ function WorkersTab() {
       .then(({ data }) => setWorkers(data || []));
   }, []);
 
-  const grouped = useMemo(() => {
+  const grouped = useMemo<Record<string, any[]>>(() => {
     if (groupBy === 'all') return { All: workers };
     const groups: Record<string, any[]> = {};
     workers.forEach(w => {
