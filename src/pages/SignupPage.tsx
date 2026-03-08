@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, ArrowLeft, ChevronRight } from 'lucide-react';
@@ -9,21 +9,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { zones } from '@/lib/mock-data';
+import type { Tables } from '@/integrations/supabase/types';
 
 const steps = ['account', 'platform', 'zone', 'plan'] as const;
 type Step = typeof steps[number];
 
 const platforms = [
-  { id: 'zomato', label: 'Zomato', icon: '🍕' },
-  { id: 'swiggy', label: 'Swiggy', icon: '🛵' },
-  { id: 'other', label: 'Other', icon: '📦' },
+  { id: 'Zomato', label: 'Zomato', icon: '🍕' },
+  { id: 'Swiggy', label: 'Swiggy', icon: '🛵' },
+  { id: 'Other', label: 'Other', icon: '📦' },
 ];
 
 const planOptions = [
-  { tier: 'BASIC', price: '₹29–49', payout: '₹1,500', desc: 'Weather only', color: 'border-border' },
-  { tier: 'STANDARD', price: '₹49–79', payout: '₹2,500', desc: 'Weather + AQI', color: 'border-primary ring-2 ring-primary/20', recommended: true },
-  { tier: 'PRO', price: '₹79–129', payout: '₹4,000', desc: 'Full coverage', color: 'border-border' },
+  { tier: 'BASIC' as const, price: '₹29–49', premium: 39, payout: 1500, desc: 'Weather only' },
+  { tier: 'STANDARD' as const, price: '₹49–79', premium: 64, payout: 2500, desc: 'Weather + AQI', recommended: true },
+  { tier: 'PRO' as const, price: '₹79–129', premium: 99, payout: 4000, desc: 'Full coverage' },
 ];
 
 export default function SignupPage() {
@@ -35,9 +35,14 @@ export default function SignupPage() {
   const [zoneId, setZoneId] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('STANDARD');
   const [loading, setLoading] = useState(false);
+  const [zones, setZones] = useState<Tables<'zones'>[]>([]);
   const navigate = useNavigate();
 
   const stepIndex = steps.indexOf(step);
+
+  useEffect(() => {
+    supabase.from('zones').select('*').order('city').then(({ data }) => setZones(data || []));
+  }, []);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,19 +66,50 @@ export default function SignupPage() {
 
   const handleFinish = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const zone = zones.find(z => z.id === zoneId);
+      const plan = planOptions.find(p => p.tier === selectedPlan) || planOptions[1];
+
+      // Update worker profile
       await supabase.from('workers').update({
         name,
         platform,
         city: zone?.city || 'Mumbai',
         zone_id: zoneId || null,
       }).eq('user_id', user.id);
+
+      // Get worker id
+      const { data: workerData } = await supabase
+        .from('workers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!workerData) throw new Error('Worker profile not found');
+
+      // Create policy
+      const startDate = new Date();
+      const endDate = new Date(Date.now() + 7 * 86400000);
+
+      await supabase.from('policies').insert({
+        worker_id: workerData.id,
+        tier: plan.tier,
+        premium: plan.premium,
+        max_payout: plan.payout,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        status: 'active',
+      });
+
+      toast.success("You're protected! Welcome to GigShield. 🛡️");
+      navigate('/worker');
+    } catch (e: any) {
+      toast.error(e.message || 'Setup failed');
     }
     setLoading(false);
-    toast.success('You\'re protected! Welcome to GigShield.');
-    navigate('/worker');
   };
 
   return (
@@ -158,7 +194,7 @@ export default function SignupPage() {
                   <SelectTrigger><SelectValue placeholder="Select your zone" /></SelectTrigger>
                   <SelectContent>
                     {zones.map(z => (
-                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                      <SelectItem key={z.id} value={z.id}>{z.name} ({z.city})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -194,7 +230,7 @@ export default function SignupPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-display font-bold text-primary">{p.price}</p>
-                        <p className="text-xs text-muted-foreground">max {p.payout}/wk</p>
+                        <p className="text-xs text-muted-foreground">max ₹{p.payout.toLocaleString()}/wk</p>
                       </div>
                     </div>
                   </button>
@@ -212,7 +248,7 @@ export default function SignupPage() {
             {step === 'account' && (
               <p className="text-center text-sm text-muted-foreground mt-6">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary font-medium hover:underline">Sign in</Link>
+                <Link to="/login" className="text-primary font-medium hover:underline">Sign up</Link>
               </p>
             )}
           </CardContent>
