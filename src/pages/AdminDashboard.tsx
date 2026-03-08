@@ -599,9 +599,9 @@ function AnalyticsTab() {
           </CardHeader>
           <CardContent className="px-2 pb-4">
             {claimsByStatus.length > 0 ? (
-              <div className="w-full" style={{ minHeight: 355 }}>
-                <ResponsiveContainer width="100%" height={355}>
-                  <PieChart margin={{ top: 10, right: 70, bottom: 10, left: 70 }}>
+              <div className="w-full" style={{ minHeight: 280 }}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart margin={{ top: 10, right: 60, bottom: 10, left: 60 }}>
                     <Pie
                       data={claimsByStatus}
                       cx="50%"
