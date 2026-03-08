@@ -108,6 +108,7 @@ export default function AdminLoginPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Existing admins can leave this blank. New admins need the setup key.
+                  Hint: <code className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[11px] select-all">gigshield-admin-2026</code>
                 </p>
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-accent to-destructive text-primary-foreground border-0 h-12 shadow-lg font-semibold text-base" disabled={loading}>
