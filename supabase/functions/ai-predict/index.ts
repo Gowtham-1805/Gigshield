@@ -313,10 +313,20 @@ CRITICAL CLAIM ESTIMATION RULES:
       // Post-filter: only keep forecasts for valid zone IDs that exist in DB
       const filteredForecasts = (rawResult.forecasts || []).filter(
         (f: any) => validZoneIds.has(f.zone_id)
-      ).map((f: any) => ({
-        ...f,
-        // Cap estimated claims to realistic range per zone (max ₹5000/week)
-        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
+      ).map((f: any) => {
+        // Cap per-zone claims based on worker count and tier mix
+        const wc = zoneWorkerCounts[f.zone_id] || { total: 0, exclusive: 0, tiers: {} };
+        const tierCap = Object.entries(wc.tiers).reduce((sum, [tier, count]) => {
+          const max = tierMaxPayouts[tier] || 1500;
+          return sum + max * (count as number);
+        }, 0);
+        // Hard cap: min of tier-based cap or ₹2500, at least ₹100 if any workers
+        const maxClaim = wc.total > 0 ? Math.min(tierCap, 2500) : 500;
+        return {
+          ...f,
+          estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
+        };
+      });
       }));
 
       return new Response(JSON.stringify({
