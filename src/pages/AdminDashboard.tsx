@@ -12,9 +12,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { mockFinancials } from '@/lib/mock-data';
-import { useLanguage } from '@/lib/language-context';
 import { useAuth } from '@/lib/auth-context';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
