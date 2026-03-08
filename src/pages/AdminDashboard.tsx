@@ -643,13 +643,18 @@ function AnalyticsTab() {
 
 function FinancialTab() {
   const [financials, setFinancials] = useState<{ month: string; premium: number; claims: number }[]>([]);
+  const [viability, setViability] = useState<{
+    totalPremium: number; totalClaims: number; margin: number; marginPct: number;
+    lossRatio: number; avgClaimAmount: number; claimRate: number; totalWorkers: number;
+    projectedMonthlyMargin: number;
+  } | null>(null);
 
   useEffect(() => {
     const fetchFinancials = async () => {
-      // Fetch real data from policies and claims
-      const [policiesRes, claimsRes] = await Promise.all([
+      const [policiesRes, claimsRes, workersRes] = await Promise.all([
         supabase.from('policies').select('premium, created_at'),
-        supabase.from('claims').select('amount, status, created_at').eq('status', 'approved'),
+        supabase.from('claims').select('amount, status, created_at'),
+        supabase.from('workers').select('id', { count: 'exact', head: true }),
       ]);
 
       const monthMap: Record<string, { premium: number; claims: number }> = {};
@@ -661,48 +666,115 @@ function FinancialTab() {
         monthMap[m].premium += Number(p.premium);
       });
 
-      (claimsRes.data || []).forEach(c => {
+      const approvedClaims = (claimsRes.data || []).filter(c => c.status === 'approved');
+      approvedClaims.forEach(c => {
         const m = months[new Date(c.created_at).getMonth()];
         if (!monthMap[m]) monthMap[m] = { premium: 0, claims: 0 };
         monthMap[m].claims += Number(c.amount);
       });
 
-      // If no real data, use mock as fallback
       const data = Object.keys(monthMap).length > 0
         ? Object.entries(monthMap).map(([month, v]) => ({ month, ...v }))
         : mockFinancials;
-
       setFinancials(data);
+
+      // Calculate viability metrics
+      const totalPremium = (policiesRes.data || []).reduce((s, p) => s + Number(p.premium), 0);
+      const totalClaimsAmt = approvedClaims.reduce((s, c) => s + Number(c.amount), 0);
+      const totalWorkers = workersRes.count || 0;
+      const margin = totalPremium - totalClaimsAmt;
+      const marginPct = totalPremium > 0 ? Math.round((margin / totalPremium) * 100) : 0;
+      const lossRatio = totalPremium > 0 ? Math.round((totalClaimsAmt / totalPremium) * 100) : 0;
+      const avgClaimAmount = approvedClaims.length > 0 ? Math.round(totalClaimsAmt / approvedClaims.length) : 0;
+      const claimRate = totalWorkers > 0 ? Math.round((approvedClaims.length / totalWorkers) * 100) : 0;
+      const weeksOfData = Math.max(1, Object.keys(monthMap).length * 4);
+      const weeklyMargin = margin / weeksOfData;
+      const projectedMonthlyMargin = Math.round(weeklyMargin * 4);
+
+      setViability({
+        totalPremium, totalClaims: totalClaimsAmt, margin, marginPct,
+        lossRatio, avgClaimAmount, claimRate, totalWorkers, projectedMonthlyMargin,
+      });
     };
     fetchFinancials();
   }, []);
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="font-display">Premium vs Claims — Monthly</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={financials}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-            <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-            <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} formatter={(v: number) => `₹${v.toLocaleString()}`} />
-            <Area type="monotone" dataKey="premium" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" />
-            <Area type="monotone" dataKey="claims" stackId="2" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.2)" />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className="flex gap-6 mt-4 justify-center text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary" /> Premium Collected
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-destructive" /> Claims Paid
-          </div>
+    <div className="space-y-6">
+      {/* Viability KPIs */}
+      {viability && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Premium', value: `₹${(viability.totalPremium / 1000).toFixed(1)}K`, color: 'text-primary' },
+            { label: 'Total Claims Paid', value: `₹${(viability.totalClaims / 1000).toFixed(1)}K`, color: 'text-destructive' },
+            { label: 'Operating Margin', value: `₹${(viability.margin / 1000).toFixed(1)}K (${viability.marginPct}%)`, color: viability.margin > 0 ? 'text-secondary' : 'text-destructive' },
+            { label: 'Loss Ratio', value: `${viability.lossRatio}%`, color: viability.lossRatio < 70 ? 'text-secondary' : viability.lossRatio < 90 ? 'text-accent' : 'text-destructive' },
+            { label: 'Avg Claim Amount', value: `₹${viability.avgClaimAmount}`, color: 'text-foreground' },
+            { label: 'Claim Rate', value: `${viability.claimRate}% of workers`, color: 'text-foreground' },
+            { label: 'Active Workers', value: viability.totalWorkers.toString(), color: 'text-primary' },
+            { label: 'Projected Monthly Margin', value: `₹${(viability.projectedMonthlyMargin / 1000).toFixed(1)}K`, color: viability.projectedMonthlyMargin > 0 ? 'text-secondary' : 'text-destructive' },
+          ].map((kpi, i) => (
+            <Card key={i} className="shadow-card">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                <p className={`font-display font-bold text-lg ${kpi.color}`}>{kpi.value}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Viability Model Card */}
+      {viability && viability.totalWorkers > 0 && (
+        <Card className="shadow-card border-primary/20">
+          <CardHeader>
+            <CardTitle className="font-display text-base">📊 Financial Viability Model (Weekly)</CardTitle>
+            <CardDescription>Projected at current scale of {viability.totalWorkers} workers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex justify-between"><span className="text-muted-foreground">Avg premium/worker:</span><span className="font-medium">₹{viability.totalWorkers > 0 ? Math.round(viability.totalPremium / viability.totalWorkers) : 0}/wk</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Claim rate:</span><span className="font-medium">{viability.claimRate}%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Avg payout/claim:</span><span className="font-medium">₹{viability.avgClaimAmount}</span></div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between"><span className="text-muted-foreground">Weekly premium pool:</span><span className="font-medium text-primary">₹{(viability.totalPremium / 1000).toFixed(1)}K</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Weekly claims:</span><span className="font-medium text-destructive">₹{(viability.totalClaims / 1000).toFixed(1)}K</span></div>
+                <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Operating margin:</span><span className={`font-bold ${viability.margin > 0 ? 'text-secondary' : 'text-destructive'}`}>₹{(viability.margin / 1000).toFixed(1)}K ({viability.marginPct}%)</span></div>
+              </div>
+            </div>
+            {viability.totalWorkers > 0 && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                <strong>At 10K workers scale:</strong> Weekly premium ₹{((viability.totalPremium / viability.totalWorkers) * 10000 / 100000).toFixed(1)}L, 
+                Est. claims ₹{((viability.totalClaims / Math.max(1, viability.totalWorkers)) * 10000 / 100000).toFixed(1)}L, 
+                Monthly margin ₹{(((viability.totalPremium - viability.totalClaims) / viability.totalWorkers) * 10000 * 4 / 100000).toFixed(1)}L
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Chart */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display">Premium vs Claims — Monthly</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={350}>
+            <AreaChart data={financials}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+              <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} formatter={(v: number) => `₹${v.toLocaleString()}`} />
+              <Legend />
+              <Area type="monotone" dataKey="premium" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" name="Premium Collected" />
+              <Area type="monotone" dataKey="claims" stackId="2" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.2)" name="Claims Paid" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
