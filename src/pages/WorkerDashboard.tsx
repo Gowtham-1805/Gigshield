@@ -211,7 +211,7 @@ export default function WorkerDashboard() {
                     <p className="font-display font-bold text-lg">{policy.tier}</p>
                   </div>
                   <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
-                    {t('coverageActive')} ✅
+                    Coverage Active ✅
                   </Badge>
                 </div>
                 <p className="text-xs opacity-70">
