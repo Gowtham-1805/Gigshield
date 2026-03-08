@@ -132,6 +132,7 @@ export default function AdminDashboard() {
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {activeTab === 'overview' && <OverviewTab stats={stats} />}
               {activeTab === 'claims' && <ClaimsTab />}
+              {activeTab === 'appeals' && <AppealsTab />}
               {activeTab === 'fraud' && <FraudTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
