@@ -18,7 +18,12 @@ type Step = typeof steps[number];
 const platforms = [
   { id: 'Zomato', label: 'Zomato', icon: '🍕' },
   { id: 'Swiggy', label: 'Swiggy', icon: '🛵' },
-  { id: 'Other', label: 'Other', icon: '📦' },
+  { id: 'Zepto', label: 'Zepto', icon: '⚡' },
+  { id: 'Blinkit', label: 'Blinkit', icon: '🟡' },
+  { id: 'Amazon', label: 'Amazon', icon: '📦' },
+  { id: 'Flipkart', label: 'Flipkart', icon: '🛒' },
+  { id: 'Dunzo', label: 'Dunzo', icon: '🏃' },
+  { id: 'Other', label: 'Other', icon: '📋' },
 ];
 
 const defaultPlanOptions = [

@@ -79,10 +79,57 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Step 3: Create claims with fraud scoring
-    const claimInserts = policies.map((p) => {
+    // Step 3: Duplicate claim prevention — skip workers who already have claims for this zone in the last 6 hours
+    const sixHoursAgo = new Date(Date.now() - 6 * 3600000).toISOString();
+    const policyIds = policies.map((p) => p.id);
+    const { data: existingClaims } = await supabase
+      .from("claims")
+      .select("policy_id")
+      .in("policy_id", policyIds)
+      .gte("created_at", sixHoursAgo);
+
+    const alreadyClaimedPolicyIds = new Set((existingClaims || []).map((c) => c.policy_id));
+
+    // Step 3b: Velocity check — skip workers with 3+ claims in last 7 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data: recentClaimsAll } = await supabase
+      .from("claims")
+      .select("policy_id")
+      .in("policy_id", policyIds)
+      .gte("created_at", sevenDaysAgo);
+
+    const claimCountByPolicy: Record<string, number> = {};
+    (recentClaimsAll || []).forEach((c) => {
+      claimCountByPolicy[c.policy_id] = (claimCountByPolicy[c.policy_id] || 0) + 1;
+    });
+
+    // Hourly payout model: ₹150/hr × estimated lost hours based on trigger type
+    const lostHoursMap: Record<string, number> = {
+      RAIN_HEAVY: 3,      // 2+ hrs disruption → 3 hrs lost
+      RAIN_EXTREME: 6,    // Full day
+      HEAT_EXTREME: 4,    // 3+ hrs extreme → 4 hrs lost
+      AQI_SEVERE: 4,      // Half-day
+      CURFEW_LOCAL: 6,    // Full day
+      STORM_CYCLONE: 8,   // Full day + aftermath
+    };
+    const hourlyRate = 150; // ₹150/hr
+    const baseLostHours = lostHoursMap[trigger_type] || 4;
+
+    // Step 3c: Create claims with fraud scoring
+    const eligiblePolicies = policies.filter((p) => {
+      if (alreadyClaimedPolicyIds.has(p.id)) return false; // Duplicate prevention
+      if ((claimCountByPolicy[p.id] || 0) >= 3) return false; // Velocity check
+      return true;
+    });
+
+    const claimInserts = eligiblePolicies.map((p) => {
       const fraudScore = Math.random() * 0.3; // Low fraud for demo
-      const amount = p.tier === "PRO" ? 600 : p.tier === "STANDARD" ? 450 : 300;
+      const tierMultiplier = p.tier === "PRO" ? 1.2 : p.tier === "STANDARD" ? 1.0 : 0.8;
+      const amount = Math.min(
+        Math.round(hourlyRate * baseLostHours * tierMultiplier),
+        Number(p.max_payout)
+      );
+      const velocityOk = (claimCountByPolicy[p.id] || 0) < 3;
       return {
         policy_id: p.id,
         incident_id: incident.id,
@@ -93,11 +140,28 @@ serve(async (req) => {
         fraud_details: {
           gps_match: true,
           weather_confirmed: true,
-          velocity_ok: true,
+          velocity_ok: velocityOk,
+          duplicate_check: "passed",
           anomaly_score: fraudScore,
+          hourly_rate: hourlyRate,
+          lost_hours: baseLostHours,
+          tier_multiplier: tierMultiplier,
         },
       };
     });
+
+    if (claimInserts.length === 0) {
+      const skippedDuplicates = alreadyClaimedPolicyIds.size;
+      const skippedVelocity = policies.length - eligiblePolicies.length - skippedDuplicates;
+      return new Response(JSON.stringify({
+        incident,
+        claims_created: 0,
+        payouts_created: 0,
+        skipped_duplicates: skippedDuplicates,
+        skipped_velocity: skippedVelocity,
+        message: "All policies filtered by duplicate/velocity checks",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: claims, error: claimErr } = await supabase
       .from("claims")
