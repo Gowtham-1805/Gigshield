@@ -84,6 +84,7 @@ export default function ProfilePage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`🛡️ Switched to ${selectedTier} plan!`);
+      sendMockWhatsAppPlanChanged(plan.premium, selectedTier);
       if (data.new_policy) setPolicy(data.new_policy);
       setShowChangePlan(false);
       setSelectedTier(null);
