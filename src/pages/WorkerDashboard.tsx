@@ -351,8 +351,12 @@ export default function WorkerDashboard() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <Button className="gradient-shield text-primary-foreground border-0 h-12">
-            {t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}
+          <Button 
+            className="gradient-shield text-primary-foreground border-0 h-12"
+            onClick={handleRenew}
+            disabled={renewing || !policy}
+          >
+            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>{t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full">
