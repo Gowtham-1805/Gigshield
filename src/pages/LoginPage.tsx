@@ -109,6 +109,9 @@ export default function LoginPage() {
               Don't have an account?{' '}
               <Link to="/signup" className="text-primary font-semibold hover:underline">Sign up</Link>
             </p>
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              <Link to="/admin-login" className="text-accent hover:underline">Admin? Sign in here →</Link>
+            </p>
           </CardContent>
         </Card>
       </motion.div>
