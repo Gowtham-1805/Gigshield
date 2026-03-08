@@ -73,8 +73,10 @@ export default function PredictionsPage() {
   const fetchForecasts = async () => {
     setLoading(true);
     try {
-      // Fetch the worker's city and zone
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // Fetch worker's city and zone
+      let city: string | null = null;
       if (user) {
         const { data: worker } = await supabase
           .from('workers')
@@ -84,22 +86,11 @@ export default function PredictionsPage() {
         if (worker) {
           setWorkerCity(worker.city);
           setWorkerZoneId(worker.zone_id);
+          city = worker.city;
         }
       }
 
-      // Pass worker's city to get city-scoped predictions
-      const { data: workerData } = await supabase
-        .from('workers')
-        .select('city, zone_id')
-        .eq('user_id', user?.id ?? '')
-        .single();
-      
-      const city = workerData?.city || workerCity;
-      if (workerData) {
-        setWorkerCity(workerData.city);
-        setWorkerZoneId(workerData.zone_id);
-      }
-
+      // Pass worker's city so AI only analyzes their region
       const { data, error } = await supabase.functions.invoke('ai-predict', {
         body: { type: 'zone_detailed_forecast', data: { city } },
       });
