@@ -234,7 +234,7 @@ export default function PredictionsPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="shadow-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-display">Zone Risk Comparison</CardTitle>
+                <CardTitle className="text-sm font-display">Disruption Comparison</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={Math.max(120, myZoneForecasts.length * 40)}>
