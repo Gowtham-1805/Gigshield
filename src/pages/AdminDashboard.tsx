@@ -610,10 +610,7 @@ function AnalyticsTab() {
                       innerRadius={40}
                       dataKey="value"
                       paddingAngle={2}
-                      label={({ name, percent }) => {
-                        const short: Record<string, string> = { approved: 'Appr', processing: 'Proc', flagged: 'Flag', rejected: 'Rej' };
-                        return `${short[name] || name} ${(percent * 100).toFixed(0)}%`;
-                      }}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={{ strokeWidth: 1 }}
                     >
                       {claimsByStatus.map((entry, i) => (
