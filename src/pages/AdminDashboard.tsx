@@ -1254,6 +1254,7 @@ function WorkersTab() {
                         <TableHead>Platform</TableHead>
                         <TableHead>City</TableHead>
                         <TableHead>Zone</TableHead>
+                        <TableHead>GPS</TableHead>
                         <TableHead>Shield Score</TableHead>
                         <TableHead>Weekly Earnings</TableHead>
                         <TableHead>Joined</TableHead>
