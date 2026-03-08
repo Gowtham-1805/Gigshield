@@ -41,6 +41,7 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
       if (!data?.success) throw new Error(data?.error || 'Report failed');
       setResult({ message: data.message, status: data.claim?.status || 'processing' });
       toast.success(data.message);
+      sendMockWhatsAppClaimCreated(data.claim?.amount || 450, selectedTrigger);
       setSelectedTrigger('');
       onClaimCreated();
     } catch (e: any) {
