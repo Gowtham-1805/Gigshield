@@ -145,6 +145,7 @@ export default function AdminDashboard() {
               {activeTab === 'financial' && <FinancialTab />}
               {activeTab === 'workers' && <WorkersTab />}
               {activeTab === 'cohorts' && <CohortAnalyticsTab />}
+              {activeTab === 'ledger' && <TransparencyLedger />}
               {activeTab === 'demo' && <DemoTriggerPanel />}
             </motion.div>
           </AnimatePresence>
