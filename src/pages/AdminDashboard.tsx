@@ -242,7 +242,7 @@ function ClaimsTab() {
       `).order('created_at', { ascending: false }).limit(50);
 
       if (filter !== 'all') {
-        query = query.eq('status', filter);
+        query = query.eq('status', filter as "approved" | "processing" | "flagged" | "rejected");
       }
 
       const { data } = await query;
