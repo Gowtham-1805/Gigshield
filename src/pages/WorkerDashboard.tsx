@@ -423,10 +423,10 @@ export default function WorkerDashboard() {
         <div className="grid grid-cols-3 gap-3">
           <Button 
             className="gradient-shield text-primary-foreground border-0 h-12 shadow-glow-blue font-semibold"
-            onClick={handleRenew}
-            disabled={renewing || !policy}
+            onClick={startRenewPayment}
+            disabled={renewing || !policy || renewPayStage !== 'idle'}
           >
-            {renewing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Renew'}
+            {renewing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Renew ₹${policy ? Number(policy.premium) : ''}`}
           </Button>
           <Button 
             variant="outline" 
