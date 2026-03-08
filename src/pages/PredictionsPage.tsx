@@ -37,6 +37,7 @@ interface ZoneForecast {
   peak_risk_day?: string;
   estimated_affected_workers?: number;
   estimated_claims_inr?: number;
+  has_gps_workers?: boolean;
   ai_summary: string;
   daily_risk: DailyRisk[];
 }
@@ -320,7 +321,7 @@ export default function PredictionsPage() {
                           <Calendar className="w-3 h-3" />Peak: {forecast.peak_risk_day}
                         </span>
                       )}
-                      {forecast.estimated_claims_inr != null && (
+                      {forecast.has_gps_workers !== false && forecast.estimated_claims_inr != null && (
                         <span>₹{forecast.estimated_claims_inr.toLocaleString('en-IN')} est.</span>
                       )}
                     </div>

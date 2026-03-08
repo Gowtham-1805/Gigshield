@@ -748,7 +748,7 @@ function PredictionsTab() {
                       </TableCell>
                       <TableCell>{f.primary_threat}</TableCell>
                       <TableCell>{f.peak_risk_day || '—'}</TableCell>
-                      <TableCell>₹{((f.estimated_claims_inr || 0) / 1000).toFixed(0)}K</TableCell>
+                      <TableCell>₹{(f.estimated_claims_inr || 0).toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
