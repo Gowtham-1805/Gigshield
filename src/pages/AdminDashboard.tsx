@@ -18,7 +18,6 @@ import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
-import TransparencyLedger from '@/components/TransparencyLedger';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +35,6 @@ const sidebarItems = [
   { icon: DollarSign, label: 'Financial', id: 'financial' },
   { icon: Users, label: 'Workers', id: 'workers' },
   { icon: PieChartIcon, label: 'Cohorts', id: 'cohorts' },
-  { icon: Eye, label: 'Ledger', id: 'ledger' },
   { icon: Zap, label: 'Demo Trigger', id: 'demo' },
 ];
 
@@ -145,7 +143,6 @@ export default function AdminDashboard() {
               {activeTab === 'financial' && <FinancialTab />}
               {activeTab === 'workers' && <WorkersTab />}
               {activeTab === 'cohorts' && <CohortAnalyticsTab />}
-              {activeTab === 'ledger' && <TransparencyLedger />}
               {activeTab === 'demo' && <DemoTriggerPanel />}
             </motion.div>
           </AnimatePresence>
