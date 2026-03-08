@@ -407,7 +407,13 @@ The `whatsapp-mock.ts` utility simulates real-time worker notifications:
 - [x] AI predictive alerts (Gemini-powered forecasting)
 - [x] Fraud network visualization
 - [x] Shield Score algorithm refinement
-- [ ] Push notifications (Service Worker)
+- [x] Real-time notifications system (push/in-app alerts)
+- [x] Worker onboarding flow (5-step guided wizard)
+- [x] Claims appeal/dispute workflow with evidence uploads
+- [x] Predictive risk dashboard (AI-powered forecasting)
+- [x] Worker earnings impact report
+- [x] Admin cohort analytics (retention, churn, renewal rates)
+- [x] Payout proof / transparency ledger
 - [ ] Multi-language support (Hindi, Tamil, Telugu)
 - [ ] Performance optimization & PWA polish
 - [ ] End-to-end testing & bug fixes
