@@ -12,6 +12,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AdminSetupPage from "./pages/AdminSetupPage";
+import ClaimHistoryPage from "./pages/ClaimHistoryPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/admin-setup" element={<AdminSetupPage />} />
               <Route path="/worker" element={<ProtectedRoute><WorkerDashboard /></ProtectedRoute>} />
+              <Route path="/claims" element={<ProtectedRoute><ClaimHistoryPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

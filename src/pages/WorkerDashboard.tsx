@@ -122,10 +122,10 @@ export default function WorkerDashboard() {
   };
 
   const navItems = [
-    { icon: Home, label: t('home'), active: true },
-    { icon: FileText, label: t('claims') },
-    { icon: Bell, label: t('alerts') },
-    { icon: User, label: t('profile') },
+    { icon: Home, label: t('home'), active: true, path: '/worker' },
+    { icon: FileText, label: t('claims'), path: '/claims' },
+    { icon: Bell, label: t('alerts'), path: '/worker' },
+    { icon: User, label: t('profile'), path: '/profile' },
   ];
 
   return (
@@ -292,9 +292,11 @@ export default function WorkerDashboard() {
           <Button className="gradient-shield text-primary-foreground border-0 h-12">
             {t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}
           </Button>
-          <Button variant="outline" className="h-12">
-            {t('claimHistory')}
-          </Button>
+          <Link to="/claims">
+            <Button variant="outline" className="h-12 w-full">
+              {t('claimHistory')}
+            </Button>
+          </Link>
         </div>
       </main>
 
@@ -302,13 +304,14 @@ export default function WorkerDashboard() {
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border md:hidden">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item) => (
-            <button
+            <Link
               key={item.label}
+              to={item.path}
               className={`flex flex-col items-center gap-1 px-3 py-2 text-xs ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <item.icon className="w-5 h-5" />
               <span>{item.label}</span>
-            </button>
+            </Link>
           ))}
         </div>
       </nav>

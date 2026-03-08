@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { mockFinancials } from '@/lib/mock-data';
 import { useLanguage } from '@/lib/language-context';
 import { useAuth } from '@/lib/auth-context';
@@ -29,6 +30,7 @@ const sidebarItems = [
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
   { icon: DollarSign, label: 'Financial', id: 'financial' },
+  { icon: Users, label: 'Workers', id: 'workers' },
   { icon: Zap, label: 'Demo Trigger', id: 'demo' },
 ];
 
@@ -136,6 +138,7 @@ export default function AdminDashboard() {
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
               {activeTab === 'financial' && <FinancialTab />}
+              {activeTab === 'workers' && <WorkersTab />}
               {activeTab === 'demo' && <DemoTriggerPanel />}
             </motion.div>
           </AnimatePresence>
@@ -145,7 +148,7 @@ export default function AdminDashboard() {
   );
 }
 
-function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies: number; claimsThisWeek: number; lossRatio: number } }) {
+function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies: number; claimsThisWeek: number; lossRatio: number; totalPremium: number; totalClaims: number } }) {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
 
@@ -166,21 +169,23 @@ function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies:
   }, []);
 
   const kpis = [
-    { label: 'Active Workers', value: stats.totalWorkers.toLocaleString(), icon: User },
-    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: Shield },
-    { label: 'Claims This Week', value: stats.claimsThisWeek.toString(), icon: FileText },
-    { label: 'Loss Ratio', value: `${stats.lossRatio}%`, icon: TrendingUp, positive: stats.lossRatio < 70 },
+    { label: 'Active Workers', value: stats.totalWorkers.toLocaleString(), icon: User, color: 'text-primary' },
+    { label: 'Active Policies', value: stats.activePolicies.toLocaleString(), icon: Shield, color: 'text-secondary' },
+    { label: 'Claims This Week', value: stats.claimsThisWeek.toString(), icon: FileText, color: 'text-accent' },
+    { label: 'Loss Ratio', value: `${stats.lossRatio}%`, icon: TrendingUp, positive: stats.lossRatio < 70, color: stats.lossRatio < 70 ? 'text-secondary' : 'text-destructive' },
+    { label: 'Premium Collected', value: `₹${(stats.totalPremium / 1000).toFixed(1)}K`, icon: DollarSign, color: 'text-primary' },
+    { label: 'Claims Paid', value: `₹${(stats.totalClaims / 1000).toFixed(1)}K`, icon: Zap, color: 'text-accent' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpis.map((kpi, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card className="shadow-card">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <kpi.icon className="w-5 h-5 text-muted-foreground" />
+                  <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
                 </div>
                 <p className="font-display text-2xl font-bold">{kpi.value}</p>
                 <p className="text-sm text-muted-foreground">{kpi.label}</p>
@@ -233,6 +238,7 @@ function OverviewTab({ stats }: { stats: { totalWorkers: number; activePolicies:
 function ClaimsTab() {
   const [claims, setClaims] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
+  const [selectedClaim, setSelectedClaim] = useState<any>(null);
 
   useEffect(() => {
     const fetchClaims = async () => {
@@ -251,67 +257,159 @@ function ClaimsTab() {
     fetchClaims();
   }, [filter]);
 
-  const counts = { all: claims.length, approved: 0, processing: 0, flagged: 0 };
-  claims.forEach(c => { if (c.status in counts) counts[c.status as keyof typeof counts]++; });
+  const handleStatusChange = async (claimId: string, newStatus: string) => {
+    await supabase.from('claims').update({ status: newStatus as any }).eq('id', claimId);
+    setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: newStatus } : c));
+    setSelectedClaim((prev: any) => prev ? { ...prev, status: newStatus } : null);
+    toast.success(`Claim ${newStatus}`);
+  };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="font-display">Claims Management</CardTitle>
-        <CardDescription>Real-time claims from the database</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="processing">Processing</TabsTrigger>
-            <TabsTrigger value="flagged">Flagged</TabsTrigger>
-          </TabsList>
-          <TabsContent value={filter} className="mt-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>Zone</TableHead>
-                  <TableHead>Trigger</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Fraud Score</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {claims.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No claims yet. Use the Demo Trigger to simulate events.</TableCell></TableRow>
-                )}
-                {claims.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{(row as any).policies?.workers?.name || 'Unknown'}</TableCell>
-                    <TableCell>{(row as any).policies?.workers?.zones?.name || 'N/A'}</TableCell>
-                    <TableCell>{row.trigger_type}</TableCell>
-                    <TableCell>₹{Number(row.amount)}</TableCell>
-                    <TableCell>
-                      <span className={row.fraud_score > 0.5 ? 'text-destructive font-bold' : row.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}>
-                        {(row.fraud_score * 100).toFixed(0)}%
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={
-                        row.status === 'approved' ? 'bg-secondary/10 text-secondary border-secondary/20' :
-                        row.status === 'flagged' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                        'bg-accent/10 text-accent border-accent/20'
-                      }>
-                        {row.status}
-                      </Badge>
-                    </TableCell>
+    <>
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display">Claims Management</CardTitle>
+          <CardDescription>Real-time claims from the database — click a row to drill down</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList>
+              <TabsTrigger value="all">All ({claims.length})</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="processing">Processing</TabsTrigger>
+              <TabsTrigger value="flagged">Flagged</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+            <TabsContent value={filter} className="mt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Zone</TableHead>
+                    <TableHead>Trigger</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Fraud Score</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {claims.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No claims yet. Use the Demo Trigger to simulate events.</TableCell></TableRow>
+                  )}
+                  {claims.map((row) => (
+                    <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedClaim(row)}>
+                      <TableCell className="font-medium">{(row as any).policies?.workers?.name || 'Unknown'}</TableCell>
+                      <TableCell>{(row as any).policies?.workers?.zones?.name || 'N/A'}</TableCell>
+                      <TableCell>{row.trigger_type}</TableCell>
+                      <TableCell>₹{Number(row.amount)}</TableCell>
+                      <TableCell>
+                        <span className={row.fraud_score > 0.5 ? 'text-destructive font-bold' : row.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}>
+                          {(row.fraud_score * 100).toFixed(0)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          row.status === 'approved' ? 'bg-secondary/10 text-secondary border-secondary/20' :
+                          row.status === 'flagged' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          row.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          'bg-accent/10 text-accent border-accent/20'
+                        }>
+                          {row.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell><Eye className="w-4 h-4 text-muted-foreground" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Claim Drill-Down Dialog */}
+      <Dialog open={!!selectedClaim} onOpenChange={() => setSelectedClaim(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display">Claim Details</DialogTitle>
+            <DialogDescription>Full breakdown of this claim</DialogDescription>
+          </DialogHeader>
+          {selectedClaim && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Worker</p>
+                  <p className="font-medium">{selectedClaim.policies?.workers?.name || 'Unknown'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Zone</p>
+                  <p className="font-medium">{selectedClaim.policies?.workers?.zones?.name || 'N/A'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Trigger</p>
+                  <p className="font-medium">{selectedClaim.trigger_type}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="font-display font-bold text-lg">₹{Number(selectedClaim.amount).toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Fraud Score</p>
+                  <p className={`font-bold text-lg ${selectedClaim.fraud_score > 0.5 ? 'text-destructive' : selectedClaim.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}`}>
+                    {(selectedClaim.fraud_score * 100).toFixed(0)}%
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Policy Tier</p>
+                  <p className="font-medium">{selectedClaim.policies?.tier}</p>
+                </div>
+              </div>
+
+              {/* Fraud Details */}
+              {selectedClaim.fraud_details && (
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-2">Fraud Check Breakdown</p>
+                  <div className="space-y-1.5 text-sm">
+                    {Object.entries(selectedClaim.fraud_details as Record<string, any>).map(([key, val]) => (
+                      <div key={key} className="flex justify-between">
+                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-medium">{typeof val === 'number' ? `${(val * 100).toFixed(0)}%` : String(val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">Timeline</p>
+                <p className="text-sm">Created: {new Date(selectedClaim.created_at).toLocaleString()}</p>
+                <p className="text-sm">Updated: {new Date(selectedClaim.updated_at).toLocaleString()}</p>
+              </div>
+
+              {/* Admin Actions */}
+              <div className="flex gap-2 pt-2">
+                {selectedClaim.status !== 'approved' && (
+                  <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90" onClick={() => handleStatusChange(selectedClaim.id, 'approved')}>
+                    ✅ Approve
+                  </Button>
+                )}
+                {selectedClaim.status !== 'rejected' && (
+                  <Button size="sm" variant="destructive" onClick={() => handleStatusChange(selectedClaim.id, 'rejected')}>
+                    ❌ Reject
+                  </Button>
+                )}
+                {selectedClaim.status !== 'flagged' && (
+                  <Button size="sm" variant="outline" className="border-accent text-accent" onClick={() => handleStatusChange(selectedClaim.id, 'flagged')}>
+                    🚩 Flag
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -383,18 +481,137 @@ function FlaggedClaimsTable() {
 function AnalyticsTab() {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [claimsByType, setClaimsByType] = useState<{ name: string; value: number }[]>([]);
+  const [claimsByStatus, setClaimsByStatus] = useState<{ name: string; value: number }[]>([]);
+  const [dailyClaims, setDailyClaims] = useState<{ date: string; count: number; amount: number }[]>([]);
+
+  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(160, 84%, 39%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(280, 60%, 55%)', 'hsl(190, 70%, 45%)'];
 
   useEffect(() => {
+    // Fetch AI predictions
     supabase.functions.invoke('ai-predict', { body: { type: 'zone_predictions' } })
       .then(({ data }) => {
         if (data?.predictions) setPredictions(data.predictions);
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Fetch claims analytics
+    supabase.from('claims').select('trigger_type, status, amount, created_at').then(({ data }) => {
+      if (!data) return;
+
+      // By type
+      const typeMap: Record<string, number> = {};
+      data.forEach(c => { typeMap[c.trigger_type] = (typeMap[c.trigger_type] || 0) + 1; });
+      setClaimsByType(Object.entries(typeMap).map(([name, value]) => ({ name, value })));
+
+      // By status
+      const statusMap: Record<string, number> = {};
+      data.forEach(c => { statusMap[c.status] = (statusMap[c.status] || 0) + 1; });
+      setClaimsByStatus(Object.entries(statusMap).map(([name, value]) => ({ name, value })));
+
+      // Daily claims (last 7 days)
+      const days: Record<string, { count: number; amount: number }> = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+        days[d] = { count: 0, amount: 0 };
+      }
+      data.forEach(c => {
+        const d = c.created_at.split('T')[0];
+        if (days[d]) {
+          days[d].count++;
+          days[d].amount += Number(c.amount);
+        }
+      });
+      setDailyClaims(Object.entries(days).map(([date, v]) => ({ date: date.slice(5), ...v })));
+    });
   }, []);
 
   return (
     <div className="space-y-6">
+      {/* Charts Row */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base font-display">Claims by Trigger Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {claimsByType.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={claimsByType} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name.replace(/_/g, ' ')} ${(percent * 100).toFixed(0)}%`}>
+                    {claimsByType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p className="text-sm text-muted-foreground text-center py-8">No claims data yet</p>}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base font-display">Daily Claims (Last 7 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={dailyClaims}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Claims" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base font-display">Claims by Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {claimsByStatus.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={claimsByStatus} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {claimsByStatus.map((entry, i) => (
+                      <Cell key={i} fill={
+                        entry.name === 'approved' ? 'hsl(160, 84%, 39%)' :
+                        entry.name === 'flagged' ? 'hsl(0, 84%, 60%)' :
+                        entry.name === 'rejected' ? 'hsl(0, 60%, 45%)' :
+                        'hsl(38, 92%, 50%)'
+                      } />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p className="text-sm text-muted-foreground text-center py-8">No claims data yet</p>}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base font-display">Daily Disbursement (₹)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={dailyClaims}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} formatter={(v: number) => `₹${v.toLocaleString()}`} />
+                <Line type="monotone" dataKey="amount" stroke="hsl(var(--secondary))" strokeWidth={2} dot={{ fill: 'hsl(var(--secondary))' }} name="Amount" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Predictions */}
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="font-display">AI Predictive Analytics — Next Week</CardTitle>
@@ -449,6 +666,59 @@ function FinancialTab() {
             <div className="w-3 h-3 rounded-full bg-destructive" /> Claims Paid
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WorkersTab() {
+  const [workers, setWorkers] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('workers').select('*, zones(name)').order('created_at', { ascending: false }).limit(50)
+      .then(({ data }) => setWorkers(data || []));
+  }, []);
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader>
+        <CardTitle className="font-display">Registered Workers</CardTitle>
+        <CardDescription>All workers on the platform</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Platform</TableHead>
+              <TableHead>City</TableHead>
+              <TableHead>Zone</TableHead>
+              <TableHead>Shield Score</TableHead>
+              <TableHead>Weekly Earnings</TableHead>
+              <TableHead>Joined</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {workers.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No workers yet</TableCell></TableRow>
+            )}
+            {workers.map((w) => (
+              <TableRow key={w.id}>
+                <TableCell className="font-medium">{w.name}</TableCell>
+                <TableCell><Badge variant="outline">{w.platform}</Badge></TableCell>
+                <TableCell>{w.city}</TableCell>
+                <TableCell>{w.zones?.name || 'N/A'}</TableCell>
+                <TableCell>
+                  <span className={w.shield_score >= 70 ? 'text-secondary font-medium' : w.shield_score >= 40 ? 'text-accent' : 'text-destructive'}>
+                    {w.shield_score}
+                  </span>
+                </TableCell>
+                <TableCell>₹{Number(w.weekly_earnings).toLocaleString()}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleDateString()}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
