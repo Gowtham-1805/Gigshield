@@ -217,7 +217,7 @@ export default function PredictionsPage() {
         </motion.div>
 
         {/* Risk Overview Chart */}
-        {!loading && sortedForecasts.length > 0 && (
+        {!loading && myZoneForecasts.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="shadow-card">
               <CardHeader className="pb-2">
