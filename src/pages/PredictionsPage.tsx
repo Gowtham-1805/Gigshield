@@ -243,7 +243,7 @@ export default function PredictionsPage() {
                       }}
                     />
                     <Bar dataKey="risk_score" radius={[0, 4, 4, 0]}>
-                      {sortedForecasts.map((f, i) => (
+                      {myZoneForecasts.map((f, i) => (
                         <Cell
                           key={i}
                           className={
