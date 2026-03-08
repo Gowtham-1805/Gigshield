@@ -352,7 +352,7 @@ export default function WorkerDashboard() {
             onClick={handleRenew}
             disabled={renewing || !policy}
           >
-            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>{t('renewPlan')} {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
+            {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : <>Renew Plan {policy ? `— ₹${Number(policy.premium)}/wk` : ''}</>}
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full">
