@@ -163,6 +163,16 @@ serve(async (req) => {
       const cityLabel = city || "all cities";
       const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
+      // Fetch GPS-active workers per zone
+      const { data: gpsWorkers } = await supabase
+        .from("workers")
+        .select("zone_id, last_lat, last_lng")
+        .in("zone_id", zoneIds)
+        .not("last_lat", "is", null)
+        .not("last_lng", "is", null);
+
+      const gpsActiveZones = new Set((gpsWorkers || []).map(w => w.zone_id));
+
       // Fetch policy tier distribution and worker-zone assignment for realistic estimates
       const { data: activePolicies } = await supabase
         .from("policies")
