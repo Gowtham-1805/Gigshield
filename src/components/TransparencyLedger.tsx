@@ -138,13 +138,32 @@ export default function TransparencyLedger() {
       e.incident.trigger_type.toLowerCase().includes(search.toLowerCase()) ||
       (e.incident.zone?.name || '').toLowerCase().includes(search.toLowerCase()) ||
       (e.incident.zone?.city || '').toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || e.claim.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    let matchesTab = false;
+    if (mainTab === 'approved') {
+      matchesTab = e.claim.status === 'approved';
+      if (approvedSub === 'paid') matchesTab = matchesTab && e.payout?.status === 'completed';
+      if (approvedSub === 'unpaid') matchesTab = matchesTab && (!e.payout || e.payout.status !== 'completed');
+    } else if (mainTab === 'processing') {
+      matchesTab = e.claim.status === 'processing';
+    } else if (mainTab === 'flagged') {
+      matchesTab = e.claim.status === 'flagged';
+    }
+    
+    return matchesSearch && matchesTab;
   }).sort((a, b) => {
     const da = new Date(a.claim.created_at).getTime();
     const db = new Date(b.claim.created_at).getTime();
     return sortDir === 'desc' ? db - da : da - db;
   });
+
+  const counts = {
+    approved: entries.filter(e => e.claim.status === 'approved').length,
+    approvedPaid: entries.filter(e => e.claim.status === 'approved' && e.payout?.status === 'completed').length,
+    approvedUnpaid: entries.filter(e => e.claim.status === 'approved' && (!e.payout || e.payout.status !== 'completed')).length,
+    processing: entries.filter(e => e.claim.status === 'processing').length,
+    flagged: entries.filter(e => e.claim.status === 'flagged').length,
+  };
 
   const totals = {
     claims: filtered.length,
