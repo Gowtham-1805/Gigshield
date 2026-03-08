@@ -67,10 +67,26 @@ export default function PredictionsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedZone, setSelectedZone] = useState<ZoneForecast | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [workerCity, setWorkerCity] = useState<string | null>(null);
+  const [workerZoneId, setWorkerZoneId] = useState<string | null>(null);
 
   const fetchForecasts = async () => {
     setLoading(true);
     try {
+      // Fetch the worker's city and zone
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: worker } = await supabase
+          .from('workers')
+          .select('city, zone_id')
+          .eq('user_id', user.id)
+          .single();
+        if (worker) {
+          setWorkerCity(worker.city);
+          setWorkerZoneId(worker.zone_id);
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('ai-predict', {
         body: { type: 'zone_detailed_forecast' },
       });
@@ -96,9 +112,21 @@ export default function PredictionsPage() {
     fetchForecasts();
   }, []);
 
-  const sortedForecasts = [...forecasts].sort((a, b) => b.risk_score - a.risk_score);
-  const highRiskCount = forecasts.filter(f => f.overall_risk === 'high' || f.overall_risk === 'critical').length;
-  const totalEstClaims = forecasts.reduce((s, f) => s + (f.estimated_claims_inr || 0), 0);
+  // Filter: show worker's city zones first, then others as "nearby"
+  const myZoneForecasts = forecasts
+    .filter(f => workerCity ? f.city.toLowerCase() === workerCity.toLowerCase() : true)
+    .sort((a, b) => {
+      // Put the worker's exact zone first
+      if (workerZoneId && a.zone_id === workerZoneId) return -1;
+      if (workerZoneId && b.zone_id === workerZoneId) return 1;
+      return b.risk_score - a.risk_score;
+    });
+  const otherForecasts = forecasts
+    .filter(f => workerCity ? f.city.toLowerCase() !== workerCity.toLowerCase() : false)
+    .sort((a, b) => b.risk_score - a.risk_score);
+
+  const highRiskCount = myZoneForecasts.filter(f => f.overall_risk === 'high' || f.overall_risk === 'critical').length;
+  const totalEstClaims = myZoneForecasts.reduce((s, f) => s + (f.estimated_claims_inr || 0), 0);
 
   return (
     <div className="min-h-screen bg-background pb-20">
