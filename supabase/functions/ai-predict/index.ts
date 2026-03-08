@@ -335,7 +335,7 @@ CRITICAL CLAIM ESTIMATION RULES:
         const hasGpsWorkers = gpsActiveZones.has(f.zone_id);
         return {
           ...f,
-          estimated_claims_inr: hasGpsWorkers ? Math.min(f.estimated_claims_inr || 0, maxClaim) : null,
+          estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
           has_gps_workers: hasGpsWorkers,
         };
       });
