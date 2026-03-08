@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield, LayoutDashboard, FileText, Map, TrendingUp,
+  Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
   DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { mockFinancials } from '@/lib/mock-data';
 import { useAuth } from '@/lib/auth-context';
 import AdminZoneMap from '@/components/AdminZoneMap';
-
+import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
 import TransparencyLedger from '@/components/TransparencyLedger';
@@ -29,7 +29,7 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: 'Overview', id: 'overview' },
   { icon: FileText, label: 'Claims', id: 'claims' },
   { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
-  { icon: DollarSign, label: 'Payouts', id: 'payouts' },
+  { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
   { icon: Brain, label: 'Predictions', id: 'predictions' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
               {activeTab === 'overview' && <OverviewTab stats={stats} />}
               {activeTab === 'claims' && <ClaimsTab />}
               {activeTab === 'appeals' && <AppealsTab />}
-              {activeTab === 'payouts' && <PayoutsTab />}
+              {activeTab === 'fraud' && <FraudTab />}
               {activeTab === 'predictions' && <PredictionsTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
@@ -768,124 +768,68 @@ function PredictionsTab() {
   );
 }
 
-function PayoutsTab() {
-  const [payouts, setPayouts] = useState<any[]>([]);
-  const [filter, setFilter] = useState('all');
-
-  useEffect(() => {
-    const fetchPayouts = async () => {
-      let query = supabase
-        .from('payouts')
-        .select(`
-          *,
-          claims!inner(trigger_type, amount, status, policies!inner(tier, workers!inner(name, zone_id, zones(name))))
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (filter !== 'all') {
-        query = query.eq('status', filter as any);
-      }
-
-      const { data } = await query;
-      setPayouts(data || []);
-    };
-    fetchPayouts();
-  }, [filter]);
-
-  const totalCompleted = payouts.filter(p => p.status === 'completed').reduce((s, p) => s + Number(p.amount), 0);
-  const totalPending = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount), 0);
-  const totalFailed = payouts.filter(p => p.status === 'failed').reduce((s, p) => s + Number(p.amount), 0);
-
+function FraudTab() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="shadow-card border-border/50">
-          <CardContent className="p-5">
-            <p className="font-display text-2xl font-bold text-secondary">₹{totalCompleted.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Completed Payouts</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card border-border/50">
-          <CardContent className="p-5">
-            <p className="font-display text-2xl font-bold text-accent">₹{totalPending.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Pending Payouts</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card border-border/50">
-          <CardContent className="p-5">
-            <p className="font-display text-2xl font-bold text-destructive">₹{totalFailed.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Failed Payouts</p>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="font-display">Payout Management</CardTitle>
-          <CardDescription>Track all disbursements to workers</CardDescription>
+          <CardTitle className="font-display">Fraud Detection</CardTitle>
+          <CardDescription>Claims flagged by the multi-layer fraud engine</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={filter} onValueChange={setFilter}>
-            <TabsList>
-              <TabsTrigger value="all">All ({payouts.length})</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="failed">Failed</TabsTrigger>
-            </TabsList>
-            <TabsContent value={filter} className="mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Worker</TableHead>
-                    <TableHead>Zone</TableHead>
-                    <TableHead>Trigger</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>UPI</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payouts.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payouts yet.</TableCell></TableRow>
-                  )}
-                  {payouts.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="font-medium">{(row as any).claims?.policies?.workers?.name || 'Unknown'}</TableCell>
-                      <TableCell>{(row as any).claims?.policies?.workers?.zones?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {(row as any).claims?.trigger_type?.replace(/_/g, ' ') || '—'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {(row as any).claims?.policies?.tier || '—'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">₹{Number(row.amount)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground font-mono">{row.upi_id || '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={
-                          row.status === 'completed' ? 'bg-secondary/10 text-secondary border-secondary/20' :
-                          row.status === 'pending' ? 'bg-accent/10 text-accent border-accent/20' :
-                          'bg-destructive/10 text-destructive border-destructive/20'
-                        }>
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-          </Tabs>
+          <FlaggedClaimsTable />
+        </CardContent>
+      </Card>
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display">Network Fraud Detection</CardTitle>
+          <CardDescription>Graph showing shared devices, UPI accounts, and correlated claims</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FraudNetworkGraph />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function FlaggedClaimsTable() {
+  const [flagged, setFlagged] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('claims').select('*, policies!inner(workers!inner(name, zone_id))')
+      .eq('status', 'flagged')
+      .order('fraud_score', { ascending: false })
+      .limit(20)
+      .then(({ data }) => setFlagged(data || []));
+  }, []);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Worker</TableHead>
+          <TableHead>Trigger</TableHead>
+          <TableHead>Fraud Score</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Date</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {flagged.length === 0 && (
+          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No flagged claims</TableCell></TableRow>
+        )}
+        {flagged.map((c) => (
+          <TableRow key={c.id}>
+            <TableCell className="font-medium">{(c as any).policies?.workers?.name || 'Unknown'}</TableCell>
+            <TableCell>{c.trigger_type}</TableCell>
+            <TableCell><span className="text-destructive font-bold">{(c.fraud_score * 100).toFixed(0)}%</span></TableCell>
+            <TableCell>₹{Number(c.amount)}</TableCell>
+            <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
