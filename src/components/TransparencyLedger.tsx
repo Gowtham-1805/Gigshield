@@ -266,7 +266,7 @@ export default function TransparencyLedger() {
                   <TableHead>Worker</TableHead>
                   <TableHead className="text-right">Claim ₹</TableHead>
                   <TableHead>Claim Status</TableHead>
-                  <TableHead>Fraud</TableHead>
+                  <TableHead>Paid</TableHead>
                   <TableHead className="text-right">Payout ₹</TableHead>
                   <TableHead>Payout</TableHead>
                 </TableRow>
