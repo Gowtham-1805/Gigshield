@@ -1271,6 +1271,19 @@ function WorkersTab() {
                           <TableCell>{w.city}</TableCell>
                           <TableCell>{w.zones?.name || 'N/A'}</TableCell>
                           <TableCell>
+                            {(() => {
+                              const hasGps = w.last_lat && w.last_lng;
+                              const isRecent = w.last_location_at && (Date.now() - new Date(w.last_location_at).getTime()) < 3600000;
+                              if (hasGps && isRecent) return (
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20" variant="outline">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-secondary mr-1 animate-pulse inline-block" />📍 Live
+                                </Badge>
+                              );
+                              if (hasGps) return <Badge variant="outline" className="text-muted-foreground">📍 Stale</Badge>;
+                              return <span className="text-muted-foreground text-xs">—</span>;
+                            })()}
+                          </TableCell>
+                          <TableCell>
                             <span className={w.shield_score >= 70 ? 'text-secondary font-medium' : w.shield_score >= 40 ? 'text-accent' : 'text-destructive'}>
                               {w.shield_score}
                             </span>
