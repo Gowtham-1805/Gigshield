@@ -110,11 +110,21 @@ serve(async (req) => {
     }
 
     if (type === "zone_detailed_forecast") {
-      // Fetch all zones with latest weather and incident history
-      const { data: zones } = await supabase.from("zones").select("*");
+      const { city } = data || {};
+      
+      // Fetch zones — filter by worker's city if provided
+      let zonesQuery = supabase.from("zones").select("*");
+      if (city) {
+        zonesQuery = zonesQuery.ilike("city", city);
+      }
+      const { data: zones } = await zonesQuery;
+      
+      const zoneIds = (zones || []).map((z) => z.id);
+      
       const { data: weatherReadings } = await supabase
         .from("weather_readings")
         .select("zone_id, temperature, rainfall, humidity, wind_speed, aqi, recorded_at")
+        .in("zone_id", zoneIds)
         .order("recorded_at", { ascending: false })
         .limit(100);
 
@@ -122,6 +132,7 @@ serve(async (req) => {
       const { data: recentIncidents } = await supabase
         .from("incidents")
         .select("zone_id, trigger_type, severity, created_at")
+        .in("zone_id", zoneIds)
         .gte("created_at", thirtyDaysAgo);
 
       const { data: recentClaims } = await supabase
@@ -147,6 +158,7 @@ serve(async (req) => {
 
       const totalClaims30d = (recentClaims || []).length;
       const totalClaimAmount = (recentClaims || []).reduce((s, c) => s + Number(c.amount), 0);
+      const cityLabel = city || "all cities";
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -159,11 +171,11 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are GigShield's weather risk AI. Analyze zone-level weather data, incident history, and risk scores to produce detailed 7-day forecasts. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). Be specific about timing and severity.`,
+              content: `You are GigShield's weather risk AI. Analyze zone-level weather data, incident history, and risk scores to produce detailed 7-day forecasts ONLY for ${cityLabel}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). Be specific about timing and severity. The platform_summary MUST only discuss ${cityLabel} zones.`,
             },
             {
               role: "user",
-              content: `Analyze these zones with their weather readings and incident history:\n${JSON.stringify(zoneDetails)}\n\nPlatform stats: ${totalClaims30d} claims totaling ₹${totalClaimAmount} in last 30 days.\n\nProvide detailed 7-day risk forecasts per zone.`,
+              content: `Analyze these ${cityLabel} zones with their weather readings and incident history:\n${JSON.stringify(zoneDetails)}\n\nPlatform stats: ${totalClaims30d} claims totaling ₹${totalClaimAmount} in last 30 days.\n\nProvide detailed 7-day disruption forecasts per zone for ${cityLabel} only.`,
             },
           ],
           tools: [

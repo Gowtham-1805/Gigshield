@@ -73,8 +73,10 @@ export default function PredictionsPage() {
   const fetchForecasts = async () => {
     setLoading(true);
     try {
-      // Fetch the worker's city and zone
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // Fetch worker's city and zone
+      let city: string | null = null;
       if (user) {
         const { data: worker } = await supabase
           .from('workers')
@@ -84,11 +86,13 @@ export default function PredictionsPage() {
         if (worker) {
           setWorkerCity(worker.city);
           setWorkerZoneId(worker.zone_id);
+          city = worker.city;
         }
       }
 
+      // Pass worker's city so AI only analyzes their region
       const { data, error } = await supabase.functions.invoke('ai-predict', {
-        body: { type: 'zone_detailed_forecast' },
+        body: { type: 'zone_detailed_forecast', data: { city } },
       });
 
       if (error) throw error;
@@ -112,18 +116,12 @@ export default function PredictionsPage() {
     fetchForecasts();
   }, []);
 
-  // Filter: show worker's city zones first, then others as "nearby"
-  const myZoneForecasts = forecasts
-    .filter(f => workerCity ? f.city.toLowerCase() === workerCity.toLowerCase() : true)
-    .sort((a, b) => {
-      // Put the worker's exact zone first
-      if (workerZoneId && a.zone_id === workerZoneId) return -1;
-      if (workerZoneId && b.zone_id === workerZoneId) return 1;
-      return b.risk_score - a.risk_score;
-    });
-  const otherForecasts = forecasts
-    .filter(f => workerCity ? f.city.toLowerCase() !== workerCity.toLowerCase() : false)
-    .sort((a, b) => b.risk_score - a.risk_score);
+  // Sort: worker's exact zone first, then by risk score
+  const myZoneForecasts = [...forecasts].sort((a, b) => {
+    if (workerZoneId && a.zone_id === workerZoneId) return -1;
+    if (workerZoneId && b.zone_id === workerZoneId) return 1;
+    return b.risk_score - a.risk_score;
+  });
 
   const highRiskCount = myZoneForecasts.filter(f => f.overall_risk === 'high' || f.overall_risk === 'critical').length;
   const totalEstClaims = myZoneForecasts.reduce((s, f) => s + (f.estimated_claims_inr || 0), 0);
@@ -197,10 +195,10 @@ export default function PredictionsPage() {
                     </div>
                   </div>
 
-                  {/* Platform Summary */}
+                  {/* City Summary */}
                   {platformSummary && (
                     <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 mb-4">
-                      <p className="text-xs font-medium text-primary mb-1">🤖 AI Platform Assessment</p>
+                      <p className="text-xs font-medium text-primary mb-1">🤖 AI {workerCity || 'City'} Assessment</p>
                       <p className="text-sm text-foreground/80">{platformSummary}</p>
                     </div>
                   )}
@@ -221,7 +219,7 @@ export default function PredictionsPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="shadow-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-display">Zone Risk Comparison</CardTitle>
+                <CardTitle className="text-sm font-display">Disruption Comparison</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={Math.max(120, myZoneForecasts.length * 40)}>
@@ -405,41 +403,7 @@ export default function PredictionsPage() {
           })}
         </div>
 
-        {/* Other Cities (collapsed) */}
-        {!loading && otherForecasts.length > 0 && (
-          <details className="mt-4">
-            <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors py-2">
-              Other cities ({otherForecasts.length} zones) — not in your coverage area
-            </summary>
-            <div className="space-y-3 mt-2 opacity-60">
-              {otherForecasts.map((forecast, i) => {
-                const config = riskConfig[forecast.overall_risk] || riskConfig.moderate;
-                const RiskIcon = config.icon;
-                return (
-                  <Card key={forecast.zone_id} className={cn('shadow-card border-l-4', config.border)}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{getThreatIcon(forecast.primary_threat)}</span>
-                          <div>
-                            <p className="font-medium text-xs">{forecast.zone_name}</p>
-                            <p className="text-[10px] text-muted-foreground">{forecast.city}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={cn(config.bg, config.color, 'text-[10px]')}>
-                            {forecast.overall_risk}
-                          </Badge>
-                          <span className={cn('font-display font-bold text-sm', config.color)}>{forecast.risk_score}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </details>
-        )}
+
 
         {!loading && forecasts.length === 0 && (
           <Card className="shadow-card">
