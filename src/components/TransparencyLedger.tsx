@@ -151,15 +151,28 @@ export default function TransparencyLedger({ workerId, isAdmin = false }: Transp
     fetchLedger();
   }, [workerId]);
 
+  // Tab + sub-filter logic
+  const tabFiltered = entries.filter((e) => {
+    if (tab === 'all') return true;
+    if (tab === 'approved') {
+      if (approvedSub === 'paid') return e.claim.status === 'approved' && e.payout?.status === 'completed';
+      if (approvedSub === 'unpaid') return e.claim.status === 'approved' && (!e.payout || e.payout.status !== 'completed');
+      return e.claim.status === 'approved';
+    }
+    if (tab === 'processing') return e.claim.status === 'processing';
+    if (tab === 'flagged') return e.claim.status === 'flagged';
+    return true;
+  });
+
   const filtered = search
-    ? entries.filter(
+    ? tabFiltered.filter(
         (e) =>
           e.claim.worker_name.toLowerCase().includes(search.toLowerCase()) ||
           e.incident.trigger_type.toLowerCase().includes(search.toLowerCase()) ||
           e.incident.zone_name.toLowerCase().includes(search.toLowerCase()) ||
           e.incident.zone_city.toLowerCase().includes(search.toLowerCase())
       )
-    : entries;
+    : tabFiltered;
 
   // Summary stats
   const totalPaid = entries.filter(e => e.payout?.status === 'completed').reduce((s, e) => s + (e.payout?.amount || 0), 0);
