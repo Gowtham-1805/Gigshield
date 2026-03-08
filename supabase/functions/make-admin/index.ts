@@ -17,6 +17,7 @@ serve(async (req) => {
     
     // Simple setup key protection — in production, use a more secure approach
     const ADMIN_SETUP_KEY = Deno.env.get("ADMIN_SETUP_KEY") || "gigshield-admin-2026";
+    console.log("Received key length:", setup_key?.length, "Expected key length:", ADMIN_SETUP_KEY.length, "Match:", setup_key === ADMIN_SETUP_KEY);
     if (setup_key !== ADMIN_SETUP_KEY) {
       return new Response(JSON.stringify({ error: "Invalid setup key" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
