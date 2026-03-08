@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowRight, Smartphone, IndianRupee, Loader2, X } from 'l
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { sendMockWhatsAppPayout } from '@/lib/whatsapp-mock';
 
 interface PayoutSimulatorProps {
   isOpen: boolean;
