@@ -116,18 +116,12 @@ export default function PredictionsPage() {
     fetchForecasts();
   }, []);
 
-  // Filter: show worker's city zones first, then others as "nearby"
-  const myZoneForecasts = forecasts
-    .filter(f => workerCity ? f.city.toLowerCase() === workerCity.toLowerCase() : true)
-    .sort((a, b) => {
-      // Put the worker's exact zone first
-      if (workerZoneId && a.zone_id === workerZoneId) return -1;
-      if (workerZoneId && b.zone_id === workerZoneId) return 1;
-      return b.risk_score - a.risk_score;
-    });
-  const otherForecasts = forecasts
-    .filter(f => workerCity ? f.city.toLowerCase() !== workerCity.toLowerCase() : false)
-    .sort((a, b) => b.risk_score - a.risk_score);
+  // Sort: worker's exact zone first, then by risk score
+  const myZoneForecasts = [...forecasts].sort((a, b) => {
+    if (workerZoneId && a.zone_id === workerZoneId) return -1;
+    if (workerZoneId && b.zone_id === workerZoneId) return 1;
+    return b.risk_score - a.risk_score;
+  });
 
   const highRiskCount = myZoneForecasts.filter(f => f.overall_risk === 'high' || f.overall_risk === 'critical').length;
   const totalEstClaims = myZoneForecasts.reduce((s, f) => s + (f.estimated_claims_inr || 0), 0);
