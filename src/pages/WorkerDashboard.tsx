@@ -280,32 +280,14 @@ export default function WorkerDashboard() {
           </motion.div>
         )}
 
-        {/* Recent Incidents */}
-        {recentIncidents.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <Card className="shadow-card border-destructive/15 bg-destructive/3">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-display text-destructive flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                    <Bell className="w-3.5 h-3.5 text-destructive" />
-                  </div>
-                  Recent Incidents
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentIncidents.slice(0, 3).map((inc) => {
-                  const trigger = triggerTypes.find(t => t.id === inc.trigger_type);
-                  return (
-                    <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/50 text-sm">
-                      <span className="font-medium">{trigger?.icon} {trigger?.label} — {inc.severity}%</span>
-                      <span className="text-xs text-muted-foreground">{new Date(inc.created_at).toLocaleTimeString()}</span>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+        {/* Worker Report & Claim Panel */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}>
+          <WorkerReportPanel
+            recentIncidents={recentIncidents}
+            hasActivePolicy={!!policy}
+            onClaimCreated={fetchData}
+          />
+        </motion.div>
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
