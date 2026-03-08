@@ -224,8 +224,8 @@ export default function PredictionsPage() {
                 <CardTitle className="text-sm font-display">Zone Risk Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={sortedForecasts} layout="vertical" margin={{ left: 80 }}>
+                <ResponsiveContainer width="100%" height={Math.max(120, myZoneForecasts.length * 40)}>
+                  <BarChart data={myZoneForecasts} layout="vertical" margin={{ left: 80 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} className="text-muted-foreground" />
                     <YAxis type="category" dataKey="zone_name" tick={{ fontSize: 10 }} width={80} className="text-muted-foreground" />
