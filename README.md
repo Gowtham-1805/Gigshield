@@ -17,10 +17,11 @@
 6. [Platform Choice: Web (PWA)](#-platform-choice-web-pwa)
 7. [AI/ML Integration](#-aiml-integration)
 8. [Tech Stack](#-tech-stack)
-9. [Development Plan](#-development-plan)
-10. [Architecture Overview](#-architecture-overview)
-11. [Key Differentiators](#-key-differentiators)
-12. [Getting Started](#-getting-started)
+9. [Implemented Features (Deep Dive)](#-implemented-features-deep-dive)
+10. [Development Plan](#-development-plan)
+11. [Architecture Overview](#-architecture-overview)
+12. [Key Differentiators](#-key-differentiators)
+13. [Getting Started](#-getting-started)
 
 ---
 
