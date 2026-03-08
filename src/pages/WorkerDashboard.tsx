@@ -195,7 +195,7 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-6 max-w-lg space-y-5">
         {/* Greeting */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-muted-foreground text-sm">{t('welcomeBack')},</p>
+          <p className="text-muted-foreground text-sm">Welcome back,</p>
           <h1 className="font-display text-2xl font-bold">{worker?.name || 'Worker'} 👋</h1>
         </motion.div>
 
