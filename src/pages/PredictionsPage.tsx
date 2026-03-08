@@ -184,8 +184,8 @@ export default function PredictionsPage() {
                   {/* KPI Row */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="p-3 rounded-lg bg-muted/50 text-center">
-                      <p className="font-display font-bold text-xl">{forecasts.length}</p>
-                      <p className="text-[10px] text-muted-foreground">Zones Tracked</p>
+                     <p className="font-display font-bold text-xl">{myZoneForecasts.length}</p>
+                      <p className="text-[10px] text-muted-foreground">Your Zones</p>
                     </div>
                     <div className="p-3 rounded-lg bg-destructive/5 text-center">
                       <p className="font-display font-bold text-xl text-destructive">{highRiskCount}</p>
