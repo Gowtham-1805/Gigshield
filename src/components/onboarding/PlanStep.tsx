@@ -4,10 +4,12 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
-const defaultPlanOptions = [
-  { tier: 'BASIC' as const, price: '₹29–49', premium: 39, payout: 1500, desc: 'Weather only' },
-  { tier: 'STANDARD' as const, price: '₹49–79', premium: 64, payout: 2500, desc: 'Weather + AQI', recommended: true },
-  { tier: 'PRO' as const, price: '₹79–129', premium: 99, payout: 4000, desc: 'Full coverage' },
+type PlanOption = { tier: string; price: string; premium: number; payout: number; desc: string; recommended: boolean };
+
+const defaultPlanOptions: PlanOption[] = [
+  { tier: 'BASIC', price: '₹29–49', premium: 39, payout: 1500, desc: 'Weather only', recommended: false },
+  { tier: 'STANDARD', price: '₹49–79', premium: 64, payout: 2500, desc: 'Weather + AQI', recommended: true },
+  { tier: 'PRO', price: '₹79–129', premium: 99, payout: 4000, desc: 'Full coverage', recommended: false },
 ];
 
 interface PlanStepProps {
