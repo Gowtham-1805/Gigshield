@@ -605,13 +605,11 @@ function AnalyticsTab() {
                     <Pie
                       data={claimsByStatus}
                       cx="50%"
-                      cy="50%"
+                      cy="45%"
                       outerRadius={80}
                       innerRadius={40}
                       dataKey="value"
                       paddingAngle={2}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={{ strokeWidth: 1 }}
                     >
                       {claimsByStatus.map((entry, i) => (
                         <Cell key={i} fill={
@@ -623,6 +621,11 @@ function AnalyticsTab() {
                       ))}
                     </Pie>
                     <Tooltip />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      formatter={(value: string) => <span style={{ fontSize: 11, color: 'hsl(var(--foreground))' }}>{value}</span>}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
