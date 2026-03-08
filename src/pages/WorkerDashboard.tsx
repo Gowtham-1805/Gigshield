@@ -140,6 +140,32 @@ export default function WorkerDashboard() {
     navigate('/');
   };
 
+  const handleRenew = async () => {
+    if (!policy) return;
+    setRenewing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('renew-policy', {
+        body: { policy_id: policy.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('🛡️ Policy renewed for another week!');
+      // Refresh data
+      const { data: newPol } = await supabase
+        .from('policies')
+        .select('*')
+        .eq('worker_id', worker!.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setPolicy(newPol);
+    } catch (e: any) {
+      toast.error(e.message || 'Renewal failed');
+    }
+    setRenewing(false);
+  };
+
   const navItems = [
     { icon: Home, label: t('home'), active: true, path: '/worker' },
     { icon: FileText, label: t('claims'), path: '/claims' },
