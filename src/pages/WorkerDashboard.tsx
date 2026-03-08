@@ -218,21 +218,43 @@ export default function WorkerDashboard() {
         </motion.div>
 
         {/* Weather Alert */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="border-accent/30 bg-accent/5 shadow-card">
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 text-xl">
-                ⚠️
-              </div>
-              <div>
-                <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Heavy rain expected Thursday in your zone. Your coverage will auto-apply.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {weatherAlert && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className={`shadow-card ${weatherAlert.icon === '⚠️' ? 'border-accent/30 bg-accent/5' : 'border-secondary/30 bg-secondary/5'}`}>
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 text-xl">
+                  {weatherAlert.icon}
+                </div>
+                <div>
+                  <p className="font-display font-semibold text-sm">{t('weatherAlert')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{weatherAlert.text}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Recent Incidents */}
+        {recentIncidents.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Card className="shadow-card border-destructive/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-display text-destructive">🚨 Recent Incidents in Your Zone</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recentIncidents.slice(0, 3).map((inc) => {
+                  const trigger = triggerTypes.find(t => t.id === inc.trigger_type);
+                  return (
+                    <div key={inc.id} className="flex items-center justify-between py-1.5 text-sm">
+                      <span>{trigger?.icon} {trigger?.label} — Severity {inc.severity}%</span>
+                      <span className="text-xs text-muted-foreground">{new Date(inc.created_at).toLocaleTimeString()}</span>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
