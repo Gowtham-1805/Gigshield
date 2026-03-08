@@ -157,9 +157,9 @@ export default function PredictionsPage() {
                 <div>
                   <CardTitle className="font-display text-lg flex items-center gap-2">
                     <Brain className="w-5 h-5 text-primary" />
-                    7-Day Predictive Risk Dashboard
+                    7-Day Risk Forecast {workerCity && <Badge variant="outline" className="ml-1 text-xs">{workerCity}</Badge>}
                   </CardTitle>
-                  <CardDescription>AI-powered weather disruption forecasts per zone</CardDescription>
+                  <CardDescription>AI-powered weather disruption forecasts for your zone</CardDescription>
                 </div>
                 <Button
                   size="sm"
