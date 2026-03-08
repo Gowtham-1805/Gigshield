@@ -381,12 +381,21 @@ function ClaimsTab() {
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground mb-2">Fraud Check Breakdown</p>
                   <div className="space-y-1.5 text-sm">
-                    {Object.entries(selectedClaim.fraud_details as Record<string, any>).map(([key, val]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="font-medium">{typeof val === 'number' ? `${(val * 100).toFixed(0)}%` : String(val)}</span>
-                      </div>
-                    ))}
+                    {Object.entries(selectedClaim.fraud_details as Record<string, any>).map(([key, val]) => {
+                      // Highlight GPS-related fields
+                      const isGps = key.startsWith('gps_');
+                      const isWarning = key === 'earnings_check' && val === 'FAILED_120_PCT';
+                      return (
+                        <div key={key} className={`flex justify-between ${isGps ? 'bg-primary/5 -mx-1 px-1 rounded' : ''}`}>
+                          <span className={`text-muted-foreground capitalize ${isGps ? 'text-primary font-medium' : ''}`}>
+                            {isGps ? '📍 ' : ''}{key.replace(/_/g, ' ')}
+                          </span>
+                          <span className={`font-medium ${isWarning ? 'text-destructive' : ''}`}>
+                            {typeof val === 'number' ? (key.includes('score') || key.includes('fraud') ? `${(val * 100).toFixed(0)}%` : val.toFixed ? val.toFixed(2) : val) : String(val)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
