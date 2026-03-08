@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
+  Shield, LayoutDashboard, FileText, Map, TrendingUp,
   DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
