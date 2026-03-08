@@ -84,7 +84,7 @@ export default function AdminSetupPage() {
                   </p>
                 </div>
                 <Button type="submit" className="w-full gradient-danger text-primary-foreground border-0 h-11" disabled={loading}>
-                  {loading ? 'Setting up...' : '👑 Become Admin'}
+                  {loading ? 'Setting up...' : '👑 Sign In'}
                 </Button>
               </form>
             ) : (
