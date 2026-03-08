@@ -187,7 +187,7 @@ export default function PredictionsPage() {
                     </div>
                     <div className="p-3 rounded-lg bg-destructive/5 text-center">
                       <p className="font-display font-bold text-xl text-destructive">{highRiskCount}</p>
-                      <p className="text-[10px] text-muted-foreground">High Risk Zones</p>
+                      <p className="text-[10px] text-muted-foreground">Disruptions</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/5 text-center">
                       <p className="font-display font-bold text-xl text-accent">₹{(totalEstClaims / 1000).toFixed(0)}K</p>
