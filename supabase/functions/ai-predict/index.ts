@@ -163,6 +163,50 @@ serve(async (req) => {
       const cityLabel = city || "all cities";
       const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
+      // Fetch policy tier distribution and worker-zone assignment for realistic estimates
+      const { data: activePolicies } = await supabase
+        .from("policies")
+        .select("tier, worker_id, workers!inner(zone_id, city)")
+        .eq("status", "active");
+
+      const tierMaxPayouts: Record<string, number> = { BASIC: 800, STANDARD: 1500, PRO: 2500 };
+      const zoneWorkerCounts: Record<string, { total: number; exclusive: number; tiers: Record<string, number> }> = {};
+
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        const wZoneId = w?.zone_id;
+        if (!wZoneId || !validZoneIds.has(wZoneId)) continue;
+        if (!zoneWorkerCounts[wZoneId]) zoneWorkerCounts[wZoneId] = { total: 0, exclusive: 0, tiers: {} };
+        zoneWorkerCounts[wZoneId].total++;
+        zoneWorkerCounts[wZoneId].tiers[p.tier] = (zoneWorkerCounts[wZoneId].tiers[p.tier] || 0) + 1;
+      }
+
+      // Workers who only work in one zone (exclusive) get higher claim amounts
+      const workerZoneCounts: Record<string, Set<string>> = {};
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        if (!w?.zone_id) continue;
+        if (!workerZoneCounts[p.worker_id]) workerZoneCounts[p.worker_id] = new Set();
+        workerZoneCounts[p.worker_id].add(w.zone_id);
+      }
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        const wZoneId = w?.zone_id;
+        if (!wZoneId || !zoneWorkerCounts[wZoneId]) continue;
+        if (workerZoneCounts[p.worker_id]?.size === 1) {
+          zoneWorkerCounts[wZoneId].exclusive++;
+        }
+      }
+
+      const zoneContext = (zones || []).map(z => {
+        const wc = zoneWorkerCounts[z.id] || { total: 0, exclusive: 0, tiers: {} };
+        return {
+          zone_id: z.id, zone_name: z.name,
+          workers: wc.total, exclusive_workers: wc.exclusive,
+          tier_breakdown: wc.tiers,
+        };
+      });
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
