@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon, ScrollText
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import AdminZoneMap from '@/components/AdminZoneMap';
 import FraudNetworkGraph from '@/components/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
-import TransparencyLedger from '@/components/TransparencyLedger';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +35,6 @@ const sidebarItems = [
   { icon: DollarSign, label: 'Financial', id: 'financial' },
   { icon: Users, label: 'Workers', id: 'workers' },
   { icon: PieChartIcon, label: 'Cohorts', id: 'cohorts' },
-  { icon: ScrollText, label: 'Ledger', id: 'ledger' },
   { icon: Zap, label: 'Demo Trigger', id: 'demo' },
 ];
 
@@ -145,7 +143,6 @@ export default function AdminDashboard() {
               {activeTab === 'financial' && <FinancialTab />}
               {activeTab === 'workers' && <WorkersTab />}
               {activeTab === 'cohorts' && <CohortAnalyticsTab />}
-              {activeTab === 'ledger' && <TransparencyLedger isAdmin />}
               {activeTab === 'demo' && <DemoTriggerPanel />}
             </motion.div>
           </AnimatePresence>

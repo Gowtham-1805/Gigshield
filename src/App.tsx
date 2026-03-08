@@ -19,7 +19,6 @@ import ProfilePage from "./pages/ProfilePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PredictionsPage from "./pages/PredictionsPage";
 import EarningsReportPage from "./pages/EarningsReportPage";
-import LedgerPage from "./pages/LedgerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,7 +43,6 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/predictions" element={<ProtectedRoute><PredictionsPage /></ProtectedRoute>} />
               <Route path="/earnings" element={<ProtectedRoute><EarningsReportPage /></ProtectedRoute>} />
-              <Route path="/ledger" element={<ProtectedRoute><LedgerPage /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
