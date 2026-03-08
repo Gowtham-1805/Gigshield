@@ -21,7 +21,7 @@ interface PlanStepProps {
 }
 
 export function PlanStep({ zoneId, selectedPlan, setSelectedPlan, onFinish, loading }: PlanStepProps) {
-  const [aiPremiums, setAiPremiums] = useState<typeof defaultPlanOptions | null>(null);
+  const [aiPremiums, setAiPremiums] = useState<PlanOption[] | null>(null);
   const [aiRecommendation, setAiRecommendation] = useState<{ recommended_tier: string; reason: string; savings_tip: string } | null>(null);
   const [loadingPremiums, setLoadingPremiums] = useState(false);
 
