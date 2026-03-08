@@ -97,11 +97,9 @@ export default function LandingPage() {
                 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-8"
                 variants={fadeUp} custom={1} initial="hidden" animate="visible"
               >
-                <span className="text-gradient-hero">
-                  Kaam ruke toh<br />paisa nahi,
-                </span>
+                <span className="text-gradient-hero">GigShield</span>
                 <br />
-                <span className="text-gradient-shield">GigShield hai na!</span>
+                <span className="text-gradient-shield">"Predict. Protect. Pay."</span>
               </motion.h1>
 
               <motion.p
