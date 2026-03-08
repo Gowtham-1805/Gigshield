@@ -67,6 +67,39 @@ export default function WorkerDashboard() {
       if (worker.zone_id) {
         const { data: z } = await supabase.from('zones').select('*').eq('id', worker.zone_id).maybeSingle();
         setZone(z);
+
+        // Fetch recent weather reading for alert
+        const { data: reading } = await supabase
+          .from('weather_readings')
+          .select('*')
+          .eq('zone_id', worker.zone_id)
+          .order('recorded_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (reading) {
+          const alerts: string[] = [];
+          if (reading.rainfall && reading.rainfall > 30) alerts.push(`🌧️ Rainfall: ${reading.rainfall}mm/hr`);
+          if (reading.temperature && reading.temperature > 42) alerts.push(`🔥 Temperature: ${reading.temperature}°C`);
+          if (reading.aqi && reading.aqi > 300) alerts.push(`😷 AQI: ${reading.aqi}`);
+          if (reading.wind_speed && reading.wind_speed > 20) alerts.push(`💨 Wind: ${reading.wind_speed}m/s`);
+          
+          if (alerts.length > 0) {
+            setWeatherAlert({ text: alerts.join(' • ') + ' — Your coverage will auto-apply.', icon: '⚠️' });
+          } else {
+            setWeatherAlert({ text: `Current: ${reading.temperature?.toFixed(1)}°C, AQI ${reading.aqi || 'N/A'} — No alerts. You're safe! ✅`, icon: '☀️' });
+          }
+        }
+
+        // Fetch recent incidents for this zone
+        const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
+        const { data: incidents } = await supabase
+          .from('incidents')
+          .select('*')
+          .eq('zone_id', worker.zone_id)
+          .gte('created_at', dayAgo)
+          .order('created_at', { ascending: false });
+        setRecentIncidents(incidents || []);
       }
     };
 
