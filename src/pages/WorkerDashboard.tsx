@@ -158,6 +158,7 @@ export default function WorkerDashboard() {
             <span className="font-display font-bold text-sm tracking-tight">GigShield</span>
           </div>
           <div className="flex items-center gap-1">
+            <NotificationBell />
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
