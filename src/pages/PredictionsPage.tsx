@@ -320,8 +320,8 @@ export default function PredictionsPage() {
                           <Calendar className="w-3 h-3" />Peak: {forecast.peak_risk_day}
                         </span>
                       )}
-                      {forecast.estimated_claims_inr && (
-                        <span>₹{(forecast.estimated_claims_inr / 1000).toFixed(0)}K est.</span>
+                      {forecast.estimated_claims_inr != null && forecast.estimated_claims_inr > 0 && (
+                        <span>₹{forecast.estimated_claims_inr < 1000 ? forecast.estimated_claims_inr : `${(forecast.estimated_claims_inr / 1000).toFixed(1)}K`} est.</span>
                       )}
                     </div>
 
