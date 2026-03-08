@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Shield, Search, Download, ArrowRight, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +56,8 @@ export default function TransparencyLedger() {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [mainTab, setMainTab] = useState('approved');
+  const [approvedSub, setApprovedSub] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -136,13 +138,32 @@ export default function TransparencyLedger() {
       e.incident.trigger_type.toLowerCase().includes(search.toLowerCase()) ||
       (e.incident.zone?.name || '').toLowerCase().includes(search.toLowerCase()) ||
       (e.incident.zone?.city || '').toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || e.claim.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    let matchesTab = false;
+    if (mainTab === 'approved') {
+      matchesTab = e.claim.status === 'approved';
+      if (approvedSub === 'paid') matchesTab = matchesTab && e.payout?.status === 'completed';
+      if (approvedSub === 'unpaid') matchesTab = matchesTab && (!e.payout || e.payout.status !== 'completed');
+    } else if (mainTab === 'processing') {
+      matchesTab = e.claim.status === 'processing';
+    } else if (mainTab === 'flagged') {
+      matchesTab = e.claim.status === 'flagged';
+    }
+    
+    return matchesSearch && matchesTab;
   }).sort((a, b) => {
     const da = new Date(a.claim.created_at).getTime();
     const db = new Date(b.claim.created_at).getTime();
     return sortDir === 'desc' ? db - da : da - db;
   });
+
+  const counts = {
+    approved: entries.filter(e => e.claim.status === 'approved').length,
+    approvedPaid: entries.filter(e => e.claim.status === 'approved' && e.payout?.status === 'completed').length,
+    approvedUnpaid: entries.filter(e => e.claim.status === 'approved' && (!e.payout || e.payout.status !== 'completed')).length,
+    processing: entries.filter(e => e.claim.status === 'processing').length,
+    flagged: entries.filter(e => e.claim.status === 'flagged').length,
+  };
 
   const totals = {
     claims: filtered.length,
@@ -212,26 +233,38 @@ export default function TransparencyLedger() {
               Export CSV
             </Button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 mt-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search worker, zone, trigger..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <div className="mt-3 space-y-3">
+            <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v); setApprovedSub('all'); }}>
+              <TabsList>
+                <TabsTrigger value="approved">Approved ({counts.approved})</TabsTrigger>
+                <TabsTrigger value="processing">Processing ({counts.processing})</TabsTrigger>
+                <TabsTrigger value="flagged">Flagged ({counts.flagged})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {mainTab === 'approved' && (
+              <div className="flex items-center gap-2">
+                {(['all', 'paid', 'unpaid'] as const).map(sub => (
+                  <Button
+                    key={sub}
+                    variant={approvedSub === sub ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setApprovedSub(sub)}
+                    className="text-xs capitalize"
+                  >
+                    {sub === 'all' ? `All (${counts.approved})` : sub === 'paid' ? `Paid (${counts.approvedPaid})` : `Unpaid (${counts.approvedUnpaid})`}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Search worker, zone, trigger..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')} title="Toggle sort">
+                {sortDir === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </Button>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="flagged">Flagged</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" size="icon" onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')} title="Toggle sort">
-              {sortDir === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
