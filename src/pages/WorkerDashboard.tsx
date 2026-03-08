@@ -224,7 +224,7 @@ export default function WorkerDashboard() {
                   </div>
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
                     <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">{t('maxCoverage')}</p>
+                    <p className="text-[10px] opacity-70">Max coverage</p>
                   </div>
                 </div>
               </CardContent>
