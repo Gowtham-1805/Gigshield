@@ -197,12 +197,14 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("worker-report error:", e);
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
     return new Response(JSON.stringify({
       success: false,
-      error: e instanceof Error ? e.message : "Unknown error",
+      error: errorMessage,
     }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
   }
 });
