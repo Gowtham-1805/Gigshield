@@ -69,3 +69,11 @@ export function sendMockWhatsAppPayout(amount: number) {
 export function sendMockWhatsAppWeatherAlert(triggerType: string) {
   sendMockWhatsAppNotification({ type: 'weather_alert', triggerType });
 }
+
+export function sendMockWhatsAppPremiumPaid(amount: number, tier: string) {
+  sendMockWhatsAppNotification({ type: 'premium_paid', amount, tier });
+}
+
+export function sendMockWhatsAppPlanChanged(amount: number, newTier: string) {
+  sendMockWhatsAppNotification({ type: 'plan_changed', amount, newTier });
+}
