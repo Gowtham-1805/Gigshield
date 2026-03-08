@@ -262,6 +262,23 @@ export default function WorkerDashboard() {
           </Card>
         </motion.div>
 
+        {/* Proactive AI Alert */}
+        {proactiveAlert && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <Card className="shadow-card border-primary/30 bg-primary/5">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xl">
+                  🔮
+                </div>
+                <div>
+                  <p className="font-display font-semibold text-sm text-primary">AI Prediction</p>
+                  <p className="text-sm text-muted-foreground mt-1">{proactiveAlert}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Weather Alert */}
         {weatherAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
