@@ -17,10 +17,11 @@
 6. [Platform Choice: Web (PWA)](#-platform-choice-web-pwa)
 7. [AI/ML Integration](#-aiml-integration)
 8. [Tech Stack](#-tech-stack)
-9. [Development Plan](#-development-plan)
-10. [Architecture Overview](#-architecture-overview)
-11. [Key Differentiators](#-key-differentiators)
-12. [Getting Started](#-getting-started)
+9. [Implemented Features (Deep Dive)](#-implemented-features-deep-dive)
+10. [Development Plan](#-development-plan)
+11. [Architecture Overview](#-architecture-overview)
+12. [Key Differentiators](#-key-differentiators)
+13. [Getting Started](#-getting-started)
 
 ---
 
@@ -406,7 +407,13 @@ The `whatsapp-mock.ts` utility simulates real-time worker notifications:
 - [x] AI predictive alerts (Gemini-powered forecasting)
 - [x] Fraud network visualization
 - [x] Shield Score algorithm refinement
-- [ ] Push notifications (Service Worker)
+- [x] Real-time notifications system (push/in-app alerts)
+- [x] Worker onboarding flow (5-step guided wizard)
+- [x] Claims appeal/dispute workflow with evidence uploads
+- [x] Predictive risk dashboard (AI-powered forecasting)
+- [x] Worker earnings impact report
+- [x] Admin cohort analytics (retention, churn, renewal rates)
+- [x] Payout proof / transparency ledger
 - [ ] Multi-language support (Hindi, Tamil, Telugu)
 - [ ] Performance optimization & PWA polish
 - [ ] End-to-end testing & bug fixes
@@ -455,6 +462,140 @@ The `whatsapp-mock.ts` utility simulates real-time worker notifications:
 │  Forecast API │   │  (Gemini 2.5)     │
 └───────────────┘   └───────────────────┘
 ```
+
+---
+
+## 🚀 Implemented Features (Deep Dive)
+
+### 1. 🔔 Real-Time Notifications System
+Workers receive instant in-app alerts without needing to check the dashboard manually.
+
+**How it works:**
+- **Database triggers** (`notify_on_incident`, `notify_on_claim_update`, `notify_on_payout_update`) automatically insert into the `notifications` table whenever an incident fires, a claim status changes, or a payout completes
+- **Supabase Realtime** subscription pushes new notifications to the client instantly via `postgres_changes` on the `notifications` table filtered by `user_id`
+- **Notification Bell** (`NotificationBell.tsx`) in the header shows unread count badge and a dropdown with full notification history
+- **WhatsApp-styled toasts** (via Sonner) pop up with color-coded gradients: amber for weather ⚠️, green for payouts 💰, blue for claims 📋
+- **Mark as read / Mark all read** — workers can dismiss individual or all notifications
+- **Notification types:** `weather`, `claim`, `payout` — stored as a PostgreSQL enum
+- **RLS policies** ensure workers only see their own notifications; admins can manage all
+
+**Tech:** Supabase Realtime, PostgreSQL triggers (SECURITY DEFINER), Sonner toast library, Framer Motion animations
+
+---
+
+### 2. 🧭 Worker Onboarding Flow
+A guided 5-step wizard that gets new workers protected in under 90 seconds.
+
+**Steps:**
+1. **Account** — Name, email, password with real-time validation; creates auth user + auto-generates worker profile via `handle_new_user()` trigger
+2. **Platform** — Select delivery platform (Zomato, Swiggy, Zepto, Blinkit, Amazon Flex, Flipkart, Dunzo) with branded icons
+3. **Zone** — Choose primary delivery zone from database; shows **Zone Risk Preview** with risk score, recent incidents, and weather data
+4. **Shield Score** — Animated gauge explainer showing the 4 factors (Weather Risk, Claim History, Seasonality, Loyalty) that determine their trust score and premiums
+5. **Plan** — Choose BASIC/STANDARD/PRO tier with dynamic premium preview calculated via the `calculate-premium` edge function based on selected zone risk
+
+**Key details:**
+- Progress bar with step indicators
+- Back navigation between steps
+- Zone data fetched from `zones` table with city grouping
+- Policy created on completion with correct tier, premium, and date range
+- Smooth Framer Motion transitions between steps
+
+**Tech:** Multi-step form state, Supabase Auth, `calculate-premium` edge function, animated ShieldScoreGauge component
+
+---
+
+### 3. ⚖️ Claims Appeal / Dispute Workflow
+Workers can dispute flagged or rejected claims with photo evidence and written explanations.
+
+**Worker side:**
+- **Appeal Dialog** (`AppealDialog.tsx`) opens from the Claim History page for any flagged/rejected claim
+- Workers write a detailed reason for the dispute
+- **Photo evidence upload** — multiple images uploaded to Supabase Storage `evidence` bucket with worker-scoped paths
+- Appeal stored in `appeals` table with `status: pending`, linked to the claim via `claim_id`
+- Workers can track appeal status (pending → approved/rejected) in their claim history
+
+**Admin side:**
+- **Appeals queue** in the Admin Dashboard with `review-appeal` edge function
+- Admins see the original claim details, fraud score, worker's appeal reason, and uploaded evidence
+- Admins can approve (which updates claim status to approved and triggers payout) or reject with admin notes
+- All actions logged with timestamps
+
+**Security:** RLS ensures workers can only create/view their own appeals; admins can manage all appeals
+
+**Tech:** Supabase Storage (public `evidence` bucket), `submit-appeal` + `review-appeal` edge functions, Dialog component
+
+---
+
+### 4. 🔮 Predictive Risk Dashboard
+AI-powered forecasting of upcoming weather disruptions so workers can prepare and admins can pre-allocate funds.
+
+**How it works:**
+- **`ai-predict` edge function** calls Google Gemini 2.5 Flash via the Lovable AI Gateway
+- Analyzes current weather readings, historical incident data, and seasonal patterns per zone
+- Returns structured predictions: event type, probability (%), estimated affected workers, projected claims volume, and recommended reserve allocation
+
+**Worker view (Alerts page → Predictions tab):**
+- Cards showing predicted events for their zone in the next 24-48 hours
+- Color-coded probability indicators (green < 40%, amber 40-70%, red > 70%)
+- Actionable advice: "Consider staying home tomorrow" or "Your coverage is active"
+
+**Admin view (Predictions tab):**
+- City-level forecast table with all zones
+- Aggregate projected claims and reserve requirements
+- Helps admins pre-allocate funds before events hit
+
+**Tech:** Lovable AI Gateway (Gemini 2.5 Flash), structured tool calling for JSON output, Recharts for visualization
+
+---
+
+### 5. 📊 Worker Earnings Impact Report
+Shows workers exactly how much income they lost vs. how much GigShield covered — reinforcing the platform's value.
+
+**Earnings Report page (`EarningsReportPage.tsx`):**
+- **Income Loss vs. Coverage chart** — visual comparison of estimated lost earnings during incidents vs. actual GigShield payouts
+- **Coverage ratio** — percentage of lost income recovered (e.g., "GigShield covered 78% of your weather-related income loss")
+- **Breakdown by event type** — separate analysis for rain, heat, AQI events
+- **Weekly/monthly trend** — line chart showing protection value over time
+- **ROI calculation** — total premiums paid vs. total payouts received
+
+**Data sources:** Joins `claims`, `payouts`, `policies`, and `incidents` tables to compute comprehensive earnings impact
+
+**Tech:** Recharts (AreaChart, BarChart), Supabase queries with joins, responsive card layout
+
+---
+
+### 6. 📈 Admin Cohort Analytics
+Deep analytics for admin decision-making — retention, churn, and renewal rates segmented by city, platform, and tier.
+
+**Cohort Analytics Tab (`CohortAnalyticsTab.tsx`):**
+- **Retention heatmap** — month-over-month worker retention rates
+- **Churn prediction** — identifies workers at risk of not renewing based on claim frequency, Shield Score trends, and engagement
+- **Policy renewal rates** — segmented by:
+  - **City:** Mumbai vs. Delhi vs. Bangalore vs. Hyderabad vs. Chennai
+  - **Platform:** Zomato vs. Swiggy vs. Zepto vs. Blinkit vs. Amazon Flex
+  - **Tier:** BASIC vs. STANDARD vs. PRO
+- **Key metrics:** Active workers, total premiums collected, loss ratio, average Shield Score
+- **Trend charts:** Worker growth over time, premium revenue trends
+
+**Tech:** Recharts (PieChart, LineChart, BarChart), Supabase aggregation queries, Tabs component for segmentation
+
+---
+
+### 7. 🔍 Payout Proof / Transparency Ledger
+A worker-visible audit trail of all trigger events → claims → payouts for trust-building.
+
+**Transparency Ledger (`TransparencyLedger.tsx`):**
+- **End-to-end trail** for every payout: Weather Event → Incident Created → Claim Generated → Fraud Check → Approval → Payout Completed
+- **Timeline view** — each step shown with timestamp, status, and relevant data (weather reading, fraud score, payout amount)
+- **Filterable** by date range, event type, and status
+- **Public verification** — workers can see that the system is fair and automated
+- **Incident details** — links to the original weather data that triggered the event
+- **Claim transparency** — shows fraud score and why the claim was approved/flagged
+
+**Admin view:** Full ledger across all workers with aggregate statistics
+**Worker view:** Personal ledger filtered to their own claims and payouts
+
+**Tech:** Supabase joins across `incidents` → `claims` → `payouts` tables, Table component, Badge status indicators, date-fns formatting
 
 ---
 
