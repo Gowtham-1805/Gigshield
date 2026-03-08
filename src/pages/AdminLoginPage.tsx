@@ -107,8 +107,7 @@ export default function AdminLoginPage() {
                   <Input id="admin-key" type="password" placeholder="Leave blank if already admin" value={setupKey} onChange={(e) => setSetupKey(e.target.value)} className="pl-10 h-11" />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Existing admins can leave this blank. New admins need the setup key.
-                  Hint: <code className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[11px] select-all">gigshield-admin-2026</code>
+                  Existing admins can leave this blank. New admins need the setup key from your administrator.
                 </p>
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-accent to-destructive text-primary-foreground border-0 h-12 shadow-lg font-semibold text-base" disabled={loading}>

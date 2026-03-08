@@ -61,8 +61,9 @@ export function AppealDialog({ open, onOpenChange, claim, onSuccess }: AppealDia
           const path = `${user.id}/${claim.id}-${Date.now()}.${ext}`;
           const { error } = await supabase.storage.from('evidence').upload(path, file);
           if (error) throw error;
-          const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(path);
-          evidenceUrls.push(urlData.publicUrl);
+          const { data: signedData, error: signedErr } = await supabase.storage.from('evidence').createSignedUrl(path, 86400);
+          if (signedErr || !signedData?.signedUrl) throw new Error('Failed to generate evidence URL');
+          evidenceUrls.push(signedData.signedUrl);
         }
         setUploading(false);
       }
