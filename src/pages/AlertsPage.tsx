@@ -201,6 +201,7 @@ export default function AlertsPage() {
     weather: { label: 'Weather', icon: <Cloud className="w-3 h-3" /> },
     prediction: { label: 'Incident', icon: <Brain className="w-3 h-3" /> },
     claim: { label: 'Claim', icon: <FileCheck className="w-3 h-3" /> },
+    payout: { label: 'Payout', icon: <Banknote className="w-3 h-3" /> },
   };
 
   const formatTime = (ts: string) => {
