@@ -276,19 +276,91 @@ Fraud Score = weighted_sum(
 | 0.3 - 0.7 | **Processing** | Needs automated review |
 | 0.7 - 1.0 | **Flagged** | Sent to admin for manual review |
 
-### 3. Predictive AI Alerts (`ai-predict` edge function)
+### 3. 📍 GPS-Based Cross-Zone Claim System
+GigShield allows gig workers to file claims in zones they aren't registered in — as long as their real-time GPS location proves they were physically nearby. This reflects the reality that delivery workers frequently cross zone boundaries during shifts.
+
+**How it works:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              GPS Cross-Zone Claim Flow                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Worker shares GPS location (Browser Geolocation API)            │
+│       │                                                          │
+│       ▼                                                          │
+│  GPS coordinates stored: workers.last_lat, workers.last_lng      │
+│  Timestamp stored: workers.last_location_at                      │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │  INCIDENT TRIGGERS (fire-trigger edge function)   │           │
+│  │                                                    │           │
+│  │  1. Find registered workers (zone_id match)        │           │
+│  │  2. Find GPS workers within 10km radius            │           │
+│  │     - Must have GPS updated within last 1 hour     │           │
+│  │     - Haversine distance ≤ GPS_RADIUS_KM (10km)    │           │
+│  │  3. Both groups get auto-generated claims           │           │
+│  └──────────────────────────────────────────────────┘           │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │  MANUAL REPORTS (worker-report edge function)      │           │
+│  │                                                    │           │
+│  │  action: "report_disruption"                       │           │
+│  │  → GPS finds nearest zone within 10km radius       │           │
+│  │  → Incident created in that zone (not registered)  │           │
+│  │                                                    │           │
+│  │  action: "file_claim"                              │           │
+│  │  → Checks: registered zone match OR GPS proximity  │           │
+│  │  → If neither: "Share location to claim in other   │           │
+│  │     zones" error guides the worker                 │           │
+│  └──────────────────────────────────────────────────┘           │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │  FRAUD SCORING (GPS-aware)                         │           │
+│  │                                                    │           │
+│  │  • claim_method: "registered_zone" or              │           │
+│  │    "gps_proximity" or "gps_nearest_zone"           │           │
+│  │  • GPS distance penalty: min(0.1, distance × 0.01)│           │
+│  │  • Cross-zone claims get slightly higher AI        │           │
+│  │    anomaly scrutiny from Gemini fraud detector     │           │
+│  │  • fraud_details stores: gps_method, distance_km,  │           │
+│  │    gps_lat, gps_lng, gps_radius_km                 │           │
+│  └──────────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key implementation details:**
+
+| Component | Detail |
+|-----------|--------|
+| **Haversine formula** | Used in both `fire-trigger` and `worker-report` to calculate Earth-surface distance between worker GPS and zone center |
+| **Radius** | `GPS_RADIUS_KM = 10` — workers within 10km of any zone center are eligible |
+| **GPS freshness** | Auto-trigger claims require GPS updated within the last 1 hour (`last_location_at >= now() - 1hr`) |
+| **Location update** | Workers send `lat`/`lng` with reports; stored in `workers.last_lat`, `workers.last_lng`, `workers.last_location_at` |
+| **Nearest zone** | For disruption reports, the system finds the nearest zone to the worker's GPS (not just their registered zone) |
+| **Fraud metadata** | Every claim records `gps_method` ("registered_zone", "gps_proximity", "gps_nearest_zone") and `gps_distance_km` in `fraud_details` JSON |
+| **AI scrutiny** | Gemini AI fraud detector receives `claim_method` and `gps_distance_km` per worker — cross-zone GPS claims get marginally higher anomaly scoring |
+| **Error guidance** | Workers without GPS who try to claim in another zone see: *"Share your location to claim in other zones"* |
+
+**Example scenario:**
+> Priya is registered in zone `del-cp` (Connaught Place) but is delivering in `del-dwarka` (Dwarka, 8km away) when extreme heat strikes. She shares her GPS location → the system calculates she is 8km from Dwarka's zone center (within 10km radius) → her claim is created with `gps_method: "gps_proximity"`, `gps_distance_km: 8.0` → AI fraud score adds a small `0.08` GPS penalty → claim is still approved.
+
+### 4. Predictive AI Alerts (`ai-predict` edge function)
 - Uses **Gemini AI** (via Lovable AI gateway) to analyze weather patterns
 - Predicts probability of disruption events **24-48 hours in advance**
 - Generates city-level forecasts: event type, probability %, estimated claims volume, reserve requirements
 - Workers see proactive alerts: *"⚠️ Heavy Monsoon Rainfall expected in your area (88% chance)"*
 
-### 4. Shield Score — Worker Trust Metric
+### 5. Shield Score — Worker Trust Metric
 An AI-computed trust score (0-100) for each worker:
 - **Increases:** Verified claims, long tenure, consistent zone presence
 - **Decreases:** Flagged claims, GPS mismatches, unusual patterns
 - **Impact:** Higher scores → lower premiums, priority payouts
 
-### 5. Fraud Network Visualization (Admin Dashboard)
+### 6. Fraud Network Visualization (Admin Dashboard)
 - AI identifies clusters of suspicious activity (e.g., multiple workers claiming same fabricated event)
 - Graph visualization shows connections between workers, incidents, and anomalies
 - Helps admins spot organized fraud rings
