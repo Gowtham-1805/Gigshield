@@ -218,11 +218,20 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}. Estimated claims per zone should be realistic for gig workers — typically ₹500-₹2500 per zone per week based on average claim of ₹${avgClaimAmount}.`,
+              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}.
+
+CRITICAL CLAIM ESTIMATION RULES:
+- estimated_claims_inr MUST be realistic per-zone weekly amounts for Indian gig workers.
+- Policy tier max payouts: BASIC ₹800/week, STANDARD ₹1500/week, PRO ₹2500/week.
+- Calculate estimated_claims_inr as: (number_of_workers × average_tier_payout × disruption_probability / 100).
+- Workers who ONLY work in that zone (exclusive workers) lose MORE income during disruptions — weight their claims 1.5x higher.
+- Total estimated claims across ALL zones combined should typically be ₹500-₹3000 for the entire city.
+- A single zone should rarely exceed ₹1500 unless it has many exclusive workers with PRO plans and critical risk.
+- Do NOT inflate numbers. These are micro-insurance weekly payouts for gig delivery workers earning ₹3000-₹8000/week.`,
             },
             {
               role: "user",
-              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above.`,
+              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nWorker distribution per zone:\n${JSON.stringify(zoneContext)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above. Use the tier breakdown and exclusive worker counts to calculate realistic estimated_claims_inr.`,
             },
           ],
           tools: [
