@@ -26,6 +26,7 @@ export default function WorkerDashboard() {
   const navigate = useNavigate();
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
   const [claims, setClaims] = useState<Tables<'claims'>[]>([]);
+  const [payouts, setPayouts] = useState<Tables<'payouts'>[]>([]);
   const [zone, setZone] = useState<Tables<'zones'> | null>(null);
   const [claimedThisWeek, setClaimedThisWeek] = useState(0);
   const [weatherAlert, setWeatherAlert] = useState<{ text: string; icon: string } | null>(null);
@@ -48,6 +49,15 @@ export default function WorkerDashboard() {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
       setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
+
+      // Fetch payouts for the worker's claims
+      if (claimsData?.length) {
+        const claimIds = claimsData.map(c => c.id);
+        const { data: payoutsData } = await supabase
+          .from('payouts').select('*').in('claim_id', claimIds)
+          .order('created_at', { ascending: false });
+        setPayouts(payoutsData || []);
+      }
     }
 
     if (worker.zone_id) {
@@ -288,6 +298,60 @@ export default function WorkerDashboard() {
             onClaimCreated={fetchData}
           />
         </motion.div>
+
+        {/* Payout Tracking */}
+        {payouts.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Card className="shadow-card border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center">
+                    💸
+                  </div>
+                  Payout Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {payouts.slice(0, 3).map((payout) => {
+                  const statusConfig = {
+                    pending: { icon: '⏳', color: 'text-accent', bg: 'bg-accent/10', label: 'Processing' },
+                    completed: { icon: '✅', color: 'text-secondary', bg: 'bg-secondary/10', label: 'Sent' },
+                    failed: { icon: '❌', color: 'text-destructive', bg: 'bg-destructive/10', label: 'Failed' },
+                  };
+                  const config = statusConfig[payout.status] || statusConfig.pending;
+                  return (
+                    <div key={payout.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg ${config.bg} flex items-center justify-center text-base`}>
+                          {config.icon}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">₹{Number(payout.amount).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {payout.upi_id ? `→ ${payout.upi_id}` : 'UPI transfer'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className={`text-[10px] ${config.color} border-current/20`}>
+                          {config.label}
+                        </Badge>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {new Date(payout.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {payouts.length > 3 && (
+                  <Link to="/claims" className="block text-center text-xs text-primary font-medium pt-2 hover:underline">
+                    View all {payouts.length} payouts →
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
