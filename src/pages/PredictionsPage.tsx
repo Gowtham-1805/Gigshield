@@ -405,6 +405,42 @@ export default function PredictionsPage() {
           })}
         </div>
 
+        {/* Other Cities (collapsed) */}
+        {!loading && otherForecasts.length > 0 && (
+          <details className="mt-4">
+            <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors py-2">
+              Other cities ({otherForecasts.length} zones) — not in your coverage area
+            </summary>
+            <div className="space-y-3 mt-2 opacity-60">
+              {otherForecasts.map((forecast, i) => {
+                const config = riskConfig[forecast.overall_risk] || riskConfig.moderate;
+                const RiskIcon = config.icon;
+                return (
+                  <Card key={forecast.zone_id} className={cn('shadow-card border-l-4', config.border)}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{getThreatIcon(forecast.primary_threat)}</span>
+                          <div>
+                            <p className="font-medium text-xs">{forecast.zone_name}</p>
+                            <p className="text-[10px] text-muted-foreground">{forecast.city}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={cn(config.bg, config.color, 'text-[10px]')}>
+                            {forecast.overall_risk}
+                          </Badge>
+                          <span className={cn('font-display font-bold text-sm', config.color)}>{forecast.risk_score}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </details>
+        )}
+
         {!loading && forecasts.length === 0 && (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center text-muted-foreground">
