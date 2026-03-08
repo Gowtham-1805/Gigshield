@@ -1,5 +1,3 @@
-import { create } from 'zustand' // we'll use a simple context instead
-
 const translations = {
   en: {
     // Landing
