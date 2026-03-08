@@ -163,6 +163,50 @@ serve(async (req) => {
       const cityLabel = city || "all cities";
       const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
+      // Fetch policy tier distribution and worker-zone assignment for realistic estimates
+      const { data: activePolicies } = await supabase
+        .from("policies")
+        .select("tier, worker_id, workers!inner(zone_id, city)")
+        .eq("status", "active");
+
+      const tierMaxPayouts: Record<string, number> = { BASIC: 800, STANDARD: 1500, PRO: 2500 };
+      const zoneWorkerCounts: Record<string, { total: number; exclusive: number; tiers: Record<string, number> }> = {};
+
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        const wZoneId = w?.zone_id;
+        if (!wZoneId || !validZoneIds.has(wZoneId)) continue;
+        if (!zoneWorkerCounts[wZoneId]) zoneWorkerCounts[wZoneId] = { total: 0, exclusive: 0, tiers: {} };
+        zoneWorkerCounts[wZoneId].total++;
+        zoneWorkerCounts[wZoneId].tiers[p.tier] = (zoneWorkerCounts[wZoneId].tiers[p.tier] || 0) + 1;
+      }
+
+      // Workers who only work in one zone (exclusive) get higher claim amounts
+      const workerZoneCounts: Record<string, Set<string>> = {};
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        if (!w?.zone_id) continue;
+        if (!workerZoneCounts[p.worker_id]) workerZoneCounts[p.worker_id] = new Set();
+        workerZoneCounts[p.worker_id].add(w.zone_id);
+      }
+      for (const p of activePolicies || []) {
+        const w = (p as any).workers;
+        const wZoneId = w?.zone_id;
+        if (!wZoneId || !zoneWorkerCounts[wZoneId]) continue;
+        if (workerZoneCounts[p.worker_id]?.size === 1) {
+          zoneWorkerCounts[wZoneId].exclusive++;
+        }
+      }
+
+      const zoneContext = (zones || []).map(z => {
+        const wc = zoneWorkerCounts[z.id] || { total: 0, exclusive: 0, tiers: {} };
+        return {
+          zone_id: z.id, zone_name: z.name,
+          workers: wc.total, exclusive_workers: wc.exclusive,
+          tier_breakdown: wc.tiers,
+        };
+      });
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -174,11 +218,20 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}. Estimated claims per zone should be realistic for gig workers — typically ₹500-₹2500 per zone per week based on average claim of ₹${avgClaimAmount}.`,
+              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}.
+
+CRITICAL CLAIM ESTIMATION RULES:
+- estimated_claims_inr MUST be realistic per-zone weekly amounts for Indian gig workers.
+- Policy tier max payouts: BASIC ₹800/week, STANDARD ₹1500/week, PRO ₹2500/week.
+- Calculate estimated_claims_inr as: (number_of_workers × average_tier_payout × disruption_probability / 100).
+- Workers who ONLY work in that zone (exclusive workers) lose MORE income during disruptions — weight their claims 1.5x higher.
+- Total estimated claims across ALL zones combined should typically be ₹500-₹3000 for the entire city.
+- A single zone should rarely exceed ₹1500 unless it has many exclusive workers with PRO plans and critical risk.
+- Do NOT inflate numbers. These are micro-insurance weekly payouts for gig delivery workers earning ₹3000-₹8000/week.`,
             },
             {
               role: "user",
-              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above.`,
+              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nWorker distribution per zone:\n${JSON.stringify(zoneContext)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above. Use the tier breakdown and exclusive worker counts to calculate realistic estimated_claims_inr.`,
             },
           ],
           tools: [
@@ -260,10 +313,20 @@ serve(async (req) => {
       // Post-filter: only keep forecasts for valid zone IDs that exist in DB
       const filteredForecasts = (rawResult.forecasts || []).filter(
         (f: any) => validZoneIds.has(f.zone_id)
-      ).map((f: any) => ({
-        ...f,
-        // Cap estimated claims to realistic range per zone (max ₹5000/week)
-        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
+      ).map((f: any) => {
+        // Cap per-zone claims based on worker count and tier mix
+        const wc = zoneWorkerCounts[f.zone_id] || { total: 0, exclusive: 0, tiers: {} };
+        const tierCap = Object.entries(wc.tiers).reduce((sum, [tier, count]) => {
+          const max = tierMaxPayouts[tier] || 1500;
+          return sum + max * (count as number);
+        }, 0);
+        // Hard cap: min of tier-based cap or ₹2500, at least ₹100 if any workers
+        const maxClaim = wc.total > 0 ? Math.min(tierCap, 2500) : 500;
+        return {
+          ...f,
+          estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxClaim),
+        };
+      });
       }));
 
       return new Response(JSON.stringify({
