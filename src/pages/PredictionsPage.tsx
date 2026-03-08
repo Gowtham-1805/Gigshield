@@ -261,9 +261,14 @@ export default function PredictionsPage() {
           </motion.div>
         )}
 
-        {/* Zone Forecast Cards */}
+        {/* Your City Zone Forecast Cards */}
+        {myZoneForecasts.length > 0 && workerCity && (
+          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> Your city: {workerCity}
+          </p>
+        )}
         <div className="space-y-3">
-          {sortedForecasts.map((forecast, i) => {
+          {myZoneForecasts.map((forecast, i) => {
             const config = riskConfig[forecast.overall_risk] || riskConfig.moderate;
             const RiskIcon = config.icon;
             return (
