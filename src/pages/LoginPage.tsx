@@ -19,13 +19,17 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
-    } else {
+      return;
+    }
+    // Check if admin
+    if (data.user) {
+      const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: data.user.id, _role: 'admin' });
       toast.success('Welcome back!');
-      navigate('/worker');
+      navigate(isAdmin ? '/admin' : '/worker');
     }
   };
 
