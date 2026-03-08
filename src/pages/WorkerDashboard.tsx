@@ -311,6 +311,18 @@ export default function WorkerDashboard() {
           </Card>
         </motion.div>
 
+        {/* GPS Location Card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <GpsLocationCard
+            workerId={worker?.id || ''}
+            workerZoneName={zone?.name}
+            lastLat={(worker as any)?.last_lat}
+            lastLng={(worker as any)?.last_lng}
+            lastLocationAt={(worker as any)?.last_location_at}
+            onLocationUpdated={fetchData}
+          />
+        </motion.div>
+
         {/* Proactive AI Alert */}
         {proactiveAlert && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
