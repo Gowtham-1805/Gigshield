@@ -140,9 +140,46 @@ export default function AlertsPage() {
       }
     }
 
-    // Sort by timestamp desc
-    allAlerts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    setAlerts(allAlerts);
+    // 4. Fetch persisted notifications from notifications table
+    const { data: notifs } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', worker.user_id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (notifs) {
+      for (const n of notifs) {
+        const typeMap: Record<string, AlertItem['type']> = { weather: 'weather', claim: 'claim', payout: 'claim' };
+        const severityMap: Record<string, AlertItem['severity']> = { weather: 'warning', claim: 'info', payout: 'info' };
+        const iconMap: Record<string, string> = { weather: '🌧️', claim: '📋', payout: '💰' };
+        const nType = (n as any).type as string;
+
+        allAlerts.push({
+          id: `notif-${n.id}`,
+          type: typeMap[nType] || 'claim',
+          title: n.title,
+          description: n.message,
+          icon: iconMap[nType] || '🔔',
+          timestamp: n.created_at,
+          severity: severityMap[nType] || 'info',
+        });
+      }
+    }
+
+    // Deduplicate by preferring notification-table entries, then sort
+    const seen = new Set<string>();
+    const deduped: AlertItem[] = [];
+    for (const a of allAlerts) {
+      const key = a.id;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(a);
+      }
+    }
+
+    deduped.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    setAlerts(deduped);
     setLoading(false);
   };
 
