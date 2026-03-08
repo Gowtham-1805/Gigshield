@@ -100,8 +100,26 @@ export default function ProfilePage() {
                   <span className={`font-medium ${daysLeft <= 2 ? 'text-destructive' : 'text-secondary'}`}>{daysLeft} days</span>
                 </div>
                 {daysLeft <= 2 && (
-                  <Button className="w-full gradient-shield text-primary-foreground border-0 mt-2">
-                    Renew Now — ₹{Number(policy.premium)}/week
+                  <Button 
+                    className="w-full gradient-shield text-primary-foreground border-0 mt-2"
+                    disabled={renewing}
+                    onClick={async () => {
+                      setRenewing(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('renew-policy', {
+                          body: { policy_id: policy!.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success('🛡️ Policy renewed!');
+                        if (data.new_policy) setPolicy(data.new_policy);
+                      } catch (e: any) {
+                        toast.error(e.message || 'Renewal failed');
+                      }
+                      setRenewing(false);
+                    }}
+                  >
+                    {renewing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renewing...</> : `Renew Now — ₹${Number(policy.premium)}/week`}
                   </Button>
                 )}
               </CardContent>
