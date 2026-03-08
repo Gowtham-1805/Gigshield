@@ -231,7 +231,7 @@ export default function CohortAnalyticsTab() {
                         contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
                         formatter={(v: number) => `${v}%`}
                       />
-                      <Bar dataKey="renewalRate" name="Renewal %" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="renewalRate" name="Renewal %" fill={CHART_COLORS.accent} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
