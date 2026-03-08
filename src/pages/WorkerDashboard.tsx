@@ -140,6 +140,7 @@ export default function WorkerDashboard() {
   const navItems = [
     { icon: Home, label: 'Home', active: true, path: '/worker' },
     { icon: FileText, label: 'Claims', path: '/claims' },
+    { icon: Brain, label: 'Forecast', path: '/predictions' },
     { icon: Bell, label: 'Alerts', path: '/alerts' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
