@@ -1182,53 +1182,110 @@ function FinancialTab() {
 
 function WorkersTab() {
   const [workers, setWorkers] = useState<any[]>([]);
+  const [groupBy, setGroupBy] = useState<'all' | 'platform' | 'city'>('all');
 
   useEffect(() => {
     supabase.from('workers').select('*, zones(name)').order('created_at', { ascending: false }).limit(50)
       .then(({ data }) => setWorkers(data || []));
   }, []);
 
+  const grouped = useMemo(() => {
+    if (groupBy === 'all') return { All: workers };
+    const groups: Record<string, any[]> = {};
+    workers.forEach(w => {
+      const key = groupBy === 'platform' ? w.platform : w.city;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(w);
+    });
+    return groups;
+  }, [workers, groupBy]);
+
+  const summaryData = useMemo(() => {
+    return Object.entries(grouped)
+      .map(([key, list]) => ({ name: key, count: list.length }))
+      .sort((a, b) => b.count - a.count);
+  }, [grouped]);
+
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="font-display">Registered Workers</CardTitle>
-        <CardDescription>All workers on the platform</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Platform</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead>Zone</TableHead>
-              <TableHead>Shield Score</TableHead>
-              <TableHead>Weekly Earnings</TableHead>
-              <TableHead>Joined</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {workers.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No workers yet</TableCell></TableRow>
-            )}
-            {workers.map((w) => (
-              <TableRow key={w.id}>
-                <TableCell className="font-medium">{w.name}</TableCell>
-                <TableCell><Badge variant="outline">{w.platform}</Badge></TableCell>
-                <TableCell>{w.city}</TableCell>
-                <TableCell>{w.zones?.name || 'N/A'}</TableCell>
-                <TableCell>
-                  <span className={w.shield_score >= 70 ? 'text-secondary font-medium' : w.shield_score >= 40 ? 'text-accent' : 'text-destructive'}>
-                    {w.shield_score}
-                  </span>
-                </TableCell>
-                <TableCell>₹{Number(w.weekly_earnings).toLocaleString()}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleDateString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      {groupBy !== 'all' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {summaryData.map(s => (
+            <Card key={s.name} className="shadow-card">
+              <CardContent className="p-4 flex items-center justify-between">
+                <span className="text-sm font-medium truncate">{s.name}</span>
+                <Badge variant="secondary" className="ml-2 shrink-0">{s.count}</Badge>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card className="shadow-card">
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <CardTitle className="font-display">Registered Workers</CardTitle>
+              <CardDescription>All workers on the platform — {workers.length} total</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
+            <TabsList>
+              <TabsTrigger value="all">All ({workers.length})</TabsTrigger>
+              <TabsTrigger value="platform">By Platform</TabsTrigger>
+              <TabsTrigger value="city">By City</TabsTrigger>
+            </TabsList>
+            <TabsContent value={groupBy} className="mt-4 space-y-6">
+              {Object.entries(grouped).map(([group, list]) => (
+                <div key={group}>
+                  {groupBy !== 'all' && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="font-display font-semibold text-sm">{group}</h3>
+                      <Badge variant="outline" className="text-xs">{list.length} workers</Badge>
+                    </div>
+                  )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Platform</TableHead>
+                        <TableHead>City</TableHead>
+                        <TableHead>Zone</TableHead>
+                        <TableHead>Shield Score</TableHead>
+                        <TableHead>Weekly Earnings</TableHead>
+                        <TableHead>Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {list.length === 0 && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No workers yet</TableCell></TableRow>
+                      )}
+                      {list.map((w: any) => (
+                        <TableRow key={w.id}>
+                          <TableCell className="font-medium">{w.name}</TableCell>
+                          <TableCell><Badge variant="outline">{w.platform}</Badge></TableCell>
+                          <TableCell>{w.city}</TableCell>
+                          <TableCell>{w.zones?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            <span className={w.shield_score >= 70 ? 'text-secondary font-medium' : w.shield_score >= 40 ? 'text-accent' : 'text-destructive'}>
+                              {w.shield_score}
+                            </span>
+                          </TableCell>
+                          <TableCell>₹{Number(w.weekly_earnings).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
