@@ -220,7 +220,7 @@ export default function WorkerDashboard() {
                 <div className="flex gap-4 mt-4">
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
                     <p className="font-display font-bold text-xl">₹{claimedThisWeek.toLocaleString()}</p>
-                    <p className="text-[10px] opacity-70">{t('claimedThisWeek')}</p>
+                    <p className="text-[10px] opacity-70">Claimed this week</p>
                   </div>
                   <div className="bg-primary-foreground/10 rounded-lg p-3 flex-1 text-center">
                     <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
