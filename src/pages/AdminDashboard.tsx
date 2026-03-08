@@ -26,6 +26,7 @@ import type { Tables } from '@/integrations/supabase/types';
 const sidebarItems = [
   { icon: LayoutDashboard, label: 'Overview', id: 'overview' },
   { icon: FileText, label: 'Claims', id: 'claims' },
+  { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
   { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
