@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Shield, Home, FileText, User, Bell, LogOut, Loader2 } from 'lucide-react';
+import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldScoreGauge } from '@/components/ShieldScoreGauge';
 import WorkerReportPanel from '@/components/WorkerReportPanel';
+import { PayoutSimulator } from '@/components/PayoutSimulator';
 import { useAuth } from '@/lib/auth-context';
 import { triggerTypes } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
@@ -33,6 +34,8 @@ export default function WorkerDashboard() {
   const [recentIncidents, setRecentIncidents] = useState<Tables<'incidents'>[]>([]);
   const [proactiveAlert, setProactiveAlert] = useState<string | null>(null);
   const [renewing, setRenewing] = useState(false);
+  const [showPayoutSimulator, setShowPayoutSimulator] = useState(false);
+  const [simulatedPayout, setSimulatedPayout] = useState<{ amount: number; claimType: string } | null>(null);
 
   const fetchData = async () => {
     if (!worker) return;
