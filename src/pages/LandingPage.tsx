@@ -116,7 +116,7 @@ export default function LandingPage() {
                   </Button>
                 </Link>
                 <a href="#pricing">
-                  <Button size="lg" variant="outline" className="text-lg px-8 h-14 border-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/5 hover:text-primary-foreground">
+                  <Button size="lg" variant="ghost" className="text-lg px-8 h-14 border border-white/30 text-white hover:bg-white/10 hover:text-white">
                     View Plans
                   </Button>
                 </a>
