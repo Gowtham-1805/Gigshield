@@ -21,7 +21,6 @@ const statusColors = {
 const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function WorkerDashboard() {
-  const { t } = useLanguage();
   const { worker, user, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileNav, setMobileNav] = useState(false);
