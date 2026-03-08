@@ -601,17 +601,21 @@ function AnalyticsTab() {
             {claimsByStatus.length > 0 ? (
               <div className="w-full" style={{ minHeight: 280 }}>
                 <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
+                  <PieChart margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
                     <Pie
                       data={claimsByStatus}
                       cx="50%"
                       cy="50%"
-                      outerRadius={80}
-                      innerRadius={40}
+                      outerRadius={70}
+                      innerRadius={35}
                       dataKey="value"
                       paddingAngle={2}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={{ strokeWidth: 1 }}
+                      label={({ name, percent, x, y, textAnchor }) => (
+                        <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={11}>
+                          {`${name} ${(percent * 100).toFixed(0)}%`}
+                        </text>
+                      )}
+                      labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}
                     >
                       {claimsByStatus.map((entry, i) => (
                         <Cell key={i} fill={
