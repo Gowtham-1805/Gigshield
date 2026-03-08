@@ -33,7 +33,6 @@ const sidebarItems = [
 ];
 
 export default function AdminDashboard() {
-  const { t } = useLanguage();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
