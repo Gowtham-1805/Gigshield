@@ -610,11 +610,18 @@ function AnalyticsTab() {
                       innerRadius={35}
                       dataKey="value"
                       paddingAngle={2}
-                      label={({ name, percent, x, y, textAnchor }) => (
-                        <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={11}>
-                          {`${name} ${(percent * 100).toFixed(0)}%`}
-                        </text>
-                      )}
+                      label={({ name, percent, x, y, textAnchor }) => {
+                        const color =
+                          name === 'approved' ? 'hsl(160, 84%, 39%)' :
+                          name === 'flagged' ? 'hsl(0, 84%, 60%)' :
+                          name === 'rejected' ? 'hsl(0, 60%, 45%)' :
+                          'hsl(38, 92%, 50%)';
+                        return (
+                          <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill={color} fontSize={11} fontWeight={600}>
+                            {`${name} ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        );
+                      }}
                       labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}
                     >
                       {claimsByStatus.map((entry, i) => (
