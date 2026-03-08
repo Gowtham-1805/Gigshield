@@ -255,9 +255,21 @@ serve(async (req) => {
 
       const aiResult = await response.json();
       const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-      const result = toolCall ? JSON.parse(toolCall.function.arguments) : { forecasts: [], platform_summary: "" };
+      const rawResult = toolCall ? JSON.parse(toolCall.function.arguments) : { forecasts: [], platform_summary: "" };
 
-      return new Response(JSON.stringify(result), {
+      // Post-filter: only keep forecasts for valid zone IDs that exist in DB
+      const filteredForecasts = (rawResult.forecasts || []).filter(
+        (f: any) => validZoneIds.has(f.zone_id)
+      ).map((f: any) => ({
+        ...f,
+        // Cap estimated claims to realistic range per zone (max ₹5000/week)
+        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
+      }));
+
+      return new Response(JSON.stringify({
+        forecasts: filteredForecasts,
+        platform_summary: rawResult.platform_summary || "",
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
