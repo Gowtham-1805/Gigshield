@@ -1,37 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Shield, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
-const steps = ['account', 'platform', 'zone', 'plan'] as const;
+import { AccountStep } from '@/components/onboarding/AccountStep';
+import { PlatformStep } from '@/components/onboarding/PlatformStep';
+import { ZoneStep } from '@/components/onboarding/ZoneStep';
+import { ShieldScoreStep } from '@/components/onboarding/ShieldScoreStep';
+import { PlanStep } from '@/components/onboarding/PlanStep';
+
+const steps = ['account', 'platform', 'zone', 'shield', 'plan'] as const;
 type Step = typeof steps[number];
 
-const platforms = [
-  { id: 'Zomato', label: 'Zomato', icon: '🍕' },
-  { id: 'Swiggy', label: 'Swiggy', icon: '🛵' },
-  { id: 'Zepto', label: 'Zepto', icon: '⚡' },
-  { id: 'Blinkit', label: 'Blinkit', icon: '🟡' },
-  { id: 'Amazon', label: 'Amazon', icon: '📦' },
-  { id: 'Flipkart', label: 'Flipkart', icon: '🛒' },
-  { id: 'Dunzo', label: 'Dunzo', icon: '🏃' },
-  { id: 'Other', label: 'Other', icon: '📋' },
-];
-
-const defaultPlanOptions = [
-  { tier: 'BASIC' as const, price: '₹29–49', premium: 39, payout: 1500, desc: 'Weather only' },
-  { tier: 'STANDARD' as const, price: '₹49–79', premium: 64, payout: 2500, desc: 'Weather + AQI', recommended: true },
-  { tier: 'PRO' as const, price: '₹79–129', premium: 99, payout: 4000, desc: 'Full coverage' },
-];
+const stepMeta: Record<Step, { title: string; desc: string }> = {
+  account: { title: 'Create Account', desc: 'Start protecting your income in 90 seconds' },
+  platform: { title: 'Your Platform', desc: 'Which delivery platform do you work on?' },
+  zone: { title: 'Your Zone', desc: 'Select your primary delivery zone' },
+  shield: { title: 'Your Shield Score', desc: 'Understand how your protection works' },
+  plan: { title: 'Choose Your Shield', desc: 'Pick the coverage that fits your needs' },
+};
 
 export default function SignupPage() {
   const [step, setStep] = useState<Step>('account');
@@ -43,9 +34,6 @@ export default function SignupPage() {
   const [selectedPlan, setSelectedPlan] = useState('STANDARD');
   const [loading, setLoading] = useState(false);
   const [zones, setZones] = useState<Tables<'zones'>[]>([]);
-  const [aiPremiums, setAiPremiums] = useState<{ tier: string; premium: number; price: string; payout: number; desc: string; recommended?: boolean }[] | null>(null);
-  const [aiRecommendation, setAiRecommendation] = useState<{ recommended_tier: string; reason: string; savings_tip: string } | null>(null);
-  const [loadingPremiums, setLoadingPremiums] = useState(false);
   const navigate = useNavigate();
 
   const stepIndex = steps.indexOf(step);
@@ -54,80 +42,6 @@ export default function SignupPage() {
     supabase.from('zones').select('*').order('city').then(({ data }) => setZones(data || []));
   }, []);
 
-  // Fetch AI premiums when zone is selected and we move to plan step
-  useEffect(() => {
-    if (step !== 'plan' || !zoneId) return;
-    
-    const fetchAIPremiums = async () => {
-      setLoadingPremiums(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: workerData } = await supabase
-          .from('workers')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (!workerData) return;
-
-        const { data, error } = await supabase.functions.invoke('calculate-premium', {
-          body: { worker_id: workerData.id, zone_id: zoneId },
-        });
-
-        if (error || !data) throw error;
-
-        const premiumData = data.premiums as Record<string, number>;
-        const plans = [
-          { tier: 'BASIC', premium: premiumData.BASIC, price: `₹${premiumData.BASIC}`, payout: 1500, desc: 'Weather only' },
-          { tier: 'STANDARD', premium: premiumData.STANDARD, price: `₹${premiumData.STANDARD}`, payout: 2500, desc: 'Weather + AQI' },
-          { tier: 'PRO', premium: premiumData.PRO, price: `₹${premiumData.PRO}`, payout: 4000, desc: 'Full coverage' },
-        ];
-
-        if (data.recommendation) {
-          setAiRecommendation(data.recommendation);
-          plans.forEach(p => {
-            if (p.tier === data.recommendation.recommended_tier) {
-              (p as any).recommended = true;
-            }
-          });
-          setSelectedPlan(data.recommendation.recommended_tier);
-        }
-
-        setAiPremiums(plans);
-      } catch (e) {
-        console.error('AI premium error:', e);
-        // Fallback to defaults
-      }
-      setLoadingPremiums(false);
-    };
-
-    fetchAIPremiums();
-  }, [step, zoneId]);
-
-  const planOptions = aiPremiums || defaultPlanOptions;
-
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Account created! Complete your profile.');
-      setStep('platform');
-    }
-  };
-
   const handleFinish = async () => {
     setLoading(true);
     try {
@@ -135,9 +49,7 @@ export default function SignupPage() {
       if (!user) throw new Error('Not authenticated');
 
       const zone = zones.find(z => z.id === zoneId);
-      const plan = planOptions.find(p => p.tier === selectedPlan) || planOptions[1];
 
-      // Update worker profile
       await supabase.from('workers').update({
         name,
         platform,
@@ -145,7 +57,6 @@ export default function SignupPage() {
         zone_id: zoneId || null,
       }).eq('user_id', user.id);
 
-      // Get worker id
       const { data: workerData } = await supabase
         .from('workers')
         .select('id')
@@ -154,13 +65,20 @@ export default function SignupPage() {
 
       if (!workerData) throw new Error('Worker profile not found');
 
-      // Create policy
       const startDate = new Date();
       const endDate = new Date(Date.now() + 7 * 86400000);
 
+      // We'll get the premium from the plan step — use defaults as fallback
+      const defaultPlans: Record<string, { premium: number; payout: number }> = {
+        BASIC: { premium: 39, payout: 1500 },
+        STANDARD: { premium: 64, payout: 2500 },
+        PRO: { premium: 99, payout: 4000 },
+      };
+      const plan = defaultPlans[selectedPlan] || defaultPlans.STANDARD;
+
       await supabase.from('policies').insert({
         worker_id: workerData.id,
-        tier: plan.tier as any,
+        tier: selectedPlan as any,
         premium: plan.premium,
         max_payout: plan.payout,
         start_date: startDate.toISOString().split('T')[0],
@@ -184,166 +102,71 @@ export default function SignupPage() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
-        <Link to="/" className="flex items-center gap-2 mb-8 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to home
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to home
+          </Link>
+          {stepIndex > 0 && (
+            <button
+              onClick={() => setStep(steps[stepIndex - 1])}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Previous step
+            </button>
+          )}
+        </div>
 
         {/* Progress */}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-2">
           {steps.map((s, i) => (
             <div key={s} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`} />
           ))}
         </div>
+        <p className="text-xs text-muted-foreground mb-6">Step {stepIndex + 1} of {steps.length}</p>
 
         <Card className="shadow-elevated">
           <CardHeader className="text-center">
             <div className="w-12 h-12 rounded-xl gradient-shield flex items-center justify-center mx-auto mb-4">
               <Shield className="w-7 h-7 text-primary-foreground" />
             </div>
-            <CardTitle className="font-display text-2xl">
-              {step === 'account' && 'Create Account'}
-              {step === 'platform' && 'Your Platform'}
-              {step === 'zone' && 'Your Zone'}
-              {step === 'plan' && 'Choose Your Shield'}
-            </CardTitle>
-            <CardDescription>
-              {step === 'account' && 'Start protecting your income in 90 seconds'}
-              {step === 'platform' && 'Which delivery platform do you work on?'}
-              {step === 'zone' && 'Select your primary delivery zone'}
-              {step === 'plan' && 'Pick the coverage that fits your needs'}
-            </CardDescription>
+            <CardTitle className="font-display text-2xl">{stepMeta[step].title}</CardTitle>
+            <CardDescription>{stepMeta[step].desc}</CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'account' && (
-              <form onSubmit={handleCreateAccount} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                </div>
-                <Button type="submit" className="w-full gradient-shield text-primary-foreground border-0 h-11" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Account'} <ChevronRight className="w-4 h-4" />
-                </Button>
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">or</span></div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-11 gap-2"
-                  onClick={async () => {
-                    const { error } = await lovable.auth.signInWithOAuth('google', {
-                      redirect_uri: window.location.origin,
-                    });
-                    if (error) toast.error(error.message || 'Google sign-in failed');
-                  }}
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                  Continue with Google
-                </Button>
-              </form>
-            )}
-
-            {step === 'platform' && (
-              <div className="space-y-3">
-                {platforms.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => { setPlatform(p.id); setStep('zone'); }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:border-primary ${
-                      platform === p.id ? 'border-primary bg-primary/5' : 'border-border'
-                    }`}
-                  >
-                    <span className="text-2xl">{p.icon}</span>
-                    <span className="font-medium">{p.label}</span>
-                    <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step === 'zone' && (
-              <div className="space-y-4">
-                <Select value={zoneId} onValueChange={setZoneId}>
-                  <SelectTrigger><SelectValue placeholder="Select your zone" /></SelectTrigger>
-                  <SelectContent>
-                    {zones.map(z => (
-                      <SelectItem key={z.id} value={z.id}>{z.name} ({z.city})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={() => setStep('plan')}
-                  disabled={!zoneId}
-                  className="w-full gradient-shield text-primary-foreground border-0 h-11"
-                >
-                  Continue <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-
-            {step === 'plan' && (
-              <div className="space-y-3">
-                {/* AI Recommendation Banner */}
-                {loadingPremiums && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-primary">AI calculating your personalized premiums...</span>
-                  </div>
-                )}
-                {aiRecommendation && !loadingPremiums && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium text-primary">AI Recommendation</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{aiRecommendation.reason}</p>
-                    <p className="text-xs text-primary/70 mt-1">💡 {aiRecommendation.savings_tip}</p>
-                  </motion.div>
-                )}
-
-                {planOptions.map((p) => (
-                  <button
-                    key={p.tier}
-                    onClick={() => setSelectedPlan(p.tier)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      selectedPlan === p.tier ? 'border-primary bg-primary/5' : 'border-border'
-                    } relative`}
-                  >
-                    {(p as any).recommended && (
-                      <span className="absolute -top-2.5 right-3 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        {aiPremiums ? <><Sparkles className="w-3 h-3" /> AI Recommended</> : 'Recommended'}
-                      </span>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-display font-bold">{p.tier}</p>
-                        <p className="text-xs text-muted-foreground">{p.desc}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-display font-bold text-primary">{p.price}/wk</p>
-                        <p className="text-xs text-muted-foreground">max ₹{p.payout.toLocaleString()}/wk</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-                <Button
-                  onClick={handleFinish}
-                  disabled={loading}
-                  className="w-full gradient-shield text-primary-foreground border-0 h-12 text-lg mt-4"
-                >
-                  {loading ? 'Setting up...' : '🛡️ Get Protected Now'}
-                </Button>
-              </div>
-            )}
+            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
+              {step === 'account' && (
+                <AccountStep
+                  name={name} setName={setName}
+                  email={email} setEmail={setEmail}
+                  password={password} setPassword={setPassword}
+                  onNext={() => setStep('platform')}
+                />
+              )}
+              {step === 'platform' && (
+                <PlatformStep
+                  platform={platform}
+                  onSelect={(p) => { setPlatform(p); setStep('zone'); }}
+                />
+              )}
+              {step === 'zone' && (
+                <ZoneStep
+                  zones={zones} zoneId={zoneId} setZoneId={setZoneId}
+                  onNext={() => setStep('shield')}
+                />
+              )}
+              {step === 'shield' && (
+                <ShieldScoreStep onNext={() => setStep('plan')} />
+              )}
+              {step === 'plan' && (
+                <PlanStep
+                  zoneId={zoneId}
+                  selectedPlan={selectedPlan}
+                  setSelectedPlan={setSelectedPlan}
+                  onFinish={handleFinish}
+                  loading={loading}
+                />
+              )}
+            </motion.div>
 
             {step === 'account' && (
               <p className="text-center text-sm text-muted-foreground mt-6">
