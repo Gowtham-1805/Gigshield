@@ -23,8 +23,15 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await userClient.auth.getUser();
     if (authErr || !user) throw new Error("Unauthorized");
 
-    const { policy_id, tier, premium, max_payout } = await req.json();
+    const { policy_id, tier } = await req.json();
     if (!policy_id) throw new Error("policy_id is required");
+
+    // Server-side authoritative pricing
+    const PLAN_PRICING: Record<string, { premium: number; max_payout: number }> = {
+      BASIC:    { premium: 39, max_payout: 800 },
+      STANDARD: { premium: 49, max_payout: 1500 },
+      PRO:      { premium: 99, max_payout: 2500 },
+    };
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -38,6 +45,9 @@ serve(async (req) => {
     if (polErr || !policy) throw new Error("Policy not found");
     if ((policy as any).workers.user_id !== user.id) throw new Error("Not your policy");
 
+    const selectedTier = tier && PLAN_PRICING[tier] ? tier : policy.tier;
+    const pricing = PLAN_PRICING[selectedTier] || PLAN_PRICING["STANDARD"];
+
     // Expire old policy
     await supabase.from("policies").update({ status: "expired" }).eq("id", policy_id);
 
@@ -49,9 +59,9 @@ serve(async (req) => {
       .from("policies")
       .insert({
         worker_id: policy.worker_id,
-        tier: tier || policy.tier,
-        premium: premium || policy.premium,
-        max_payout: max_payout || policy.max_payout,
+        tier: selectedTier,
+        premium: pricing.premium,
+        max_payout: pricing.max_payout,
         start_date: startDate.toISOString().split("T")[0],
         end_date: endDate.toISOString().split("T")[0],
         status: "active",
