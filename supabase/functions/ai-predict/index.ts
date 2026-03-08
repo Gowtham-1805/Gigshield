@@ -161,31 +161,7 @@ serve(async (req) => {
       const totalClaims30d = (recentClaims || []).length;
       const totalClaimAmount = (recentClaims || []).reduce((s, c) => s + Number(c.amount), 0);
       const cityLabel = city || "all cities";
-      const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 300;
-
-      // Fetch active policies to understand tier distribution and realistic payout caps
-      const { data: activePolicies } = await supabase
-        .from("policies")
-        .select("tier, max_payout, premium")
-        .eq("status", "active");
-
-      const tierCounts = { BASIC: 0, STANDARD: 0, PRO: 0 };
-      const tierMaxPayouts = { BASIC: 500, STANDARD: 1000, PRO: 1500 };
-      (activePolicies || []).forEach((p: any) => {
-        if (p.tier in tierCounts) tierCounts[p.tier as keyof typeof tierCounts]++;
-      });
-      const totalActivePolicies = Object.values(tierCounts).reduce((a, b) => a + b, 0);
-      const weightedAvgPayout = totalActivePolicies > 0
-        ? Math.round(
-            (tierCounts.BASIC * tierMaxPayouts.BASIC +
-             tierCounts.STANDARD * tierMaxPayouts.STANDARD +
-             tierCounts.PRO * tierMaxPayouts.PRO) / totalActivePolicies
-          )
-        : 400;
-
-      // Realistic per-zone weekly claim estimate: weighted avg payout × ~20-40% trigger probability
-      const realisticPerZoneClaim = Math.round(weightedAvgPayout * 0.3);
-      const maxPerZoneClaim = weightedAvgPayout; // Hard cap = one full weighted avg payout
+      const avgClaimAmount = totalClaims30d > 0 ? Math.round(totalClaimAmount / totalClaims30d) : 500;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -198,19 +174,11 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}.
-
-IMPORTANT - Estimated claims per zone MUST be realistic and LOW:
-- GigShield is a micro-insurance platform with weekly premiums of ₹29-₹129.
-- Policy tiers: BASIC (max payout ~₹500), STANDARD (~₹1000), PRO (~₹1500).
-- Current active policy distribution: BASIC=${tierCounts.BASIC}, STANDARD=${tierCounts.STANDARD}, PRO=${tierCounts.PRO}.
-- Weighted average max payout per worker: ₹${weightedAvgPayout}.
-- Realistic estimated_claims_inr per zone per week: ₹${Math.round(realisticPerZoneClaim * 0.5)}-₹${realisticPerZoneClaim} for low-moderate risk, up to ₹${maxPerZoneClaim} ONLY for critical risk zones.
-- NEVER exceed ₹${maxPerZoneClaim} per zone. Most zones should be ₹100-₹${realisticPerZoneClaim}.`,
+              content: `You are GigShield's weather risk AI. You MUST ONLY produce forecasts for the exact zones provided in the input data. Do NOT invent or add zones that are not in the input. The valid zones are: ${validZoneNames.join(", ")}. Consider seasonal patterns for Indian cities (monsoon Jun-Sep, winter fog Dec-Jan, summer heat Mar-May, AQI spikes Oct-Nov). The platform_summary MUST only discuss ${cityLabel}. Estimated claims per zone should be realistic for gig workers — typically ₹500-₹2500 per zone per week based on average claim of ₹${avgClaimAmount}.`,
             },
             {
               role: "user",
-              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}. Average claim amount: ₹${avgClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above. Keep estimated_claims_inr realistic and proportional to the micro-insurance premiums (₹29-₹129/week).`,
+              content: `Analyze ONLY these ${cityLabel} zones (do NOT add any other zones):\n${JSON.stringify(zoneDetails)}\n\nRecent claims in this region: ${totalClaims30d} claims totaling ₹${totalClaimAmount}.\n\nProvide 7-day disruption forecasts ONLY for the zones listed above.`,
             },
           ],
           tools: [
@@ -294,8 +262,8 @@ IMPORTANT - Estimated claims per zone MUST be realistic and LOW:
         (f: any) => validZoneIds.has(f.zone_id)
       ).map((f: any) => ({
         ...f,
-        // Cap estimated claims to realistic range based on policy tier distribution
-        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, maxPerZoneClaim),
+        // Cap estimated claims to realistic range per zone (max ₹5000/week)
+        estimated_claims_inr: Math.min(f.estimated_claims_inr || 0, 5000),
       }));
 
       return new Response(JSON.stringify({
