@@ -207,8 +207,8 @@ export default function CohortAnalyticsTab() {
                         formatter={(v: number) => `${v}%`}
                       />
                       <Legend />
-                      <Bar dataKey="retentionRate" name="Retention %" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="churnRate" name="Churn %" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="retentionRate" name="Retention %" fill={CHART_COLORS.secondary} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="churnRate" name="Churn %" fill={CHART_COLORS.destructive} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
