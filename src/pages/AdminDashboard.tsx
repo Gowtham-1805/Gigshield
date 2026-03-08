@@ -1075,7 +1075,11 @@ function FinancialTab() {
       setFinancials(data);
 
       // Calculate viability metrics
-      const totalPremium = (policiesRes.data || []).reduce((s, p) => s + Number(p.premium), 0);
+      const totalPremium = (policiesRes.data || []).reduce((s, p) => {
+        const createdAt = new Date(p.created_at);
+        const weeksActive = Math.max(1, Math.ceil((now.getTime() - createdAt.getTime()) / (7 * 24 * 60 * 60 * 1000)));
+        return s + Number(p.premium) * weeksActive;
+      }, 0);
       const totalClaimsAmt = approvedClaims.reduce((s, c) => s + Number(c.amount), 0);
       const totalWorkers = workersRes.count || 0;
       const margin = totalPremium - totalClaimsAmt;
