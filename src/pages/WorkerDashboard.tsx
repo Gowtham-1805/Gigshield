@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
