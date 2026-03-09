@@ -24,9 +24,8 @@ export default function LoginPage() {
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     if (data.user) {
-      const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: data.user.id, _role: 'admin' });
       toast.success('Welcome back!');
-      navigate(isAdmin ? '/admin' : '/worker');
+      navigate('/worker');
     }
   };
 
