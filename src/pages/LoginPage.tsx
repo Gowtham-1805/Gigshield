@@ -17,14 +17,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, worker, loading: authLoading } = useAuth();
 
-  // Redirect authenticated users (handles OAuth callback)
+  // Redirect authenticated users: new/incomplete → onboarding, existing → worker
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/worker', { replace: true });
+      if (!worker || !worker.zone_id) {
+        navigate('/signup', { replace: true });
+      } else {
+        navigate('/worker', { replace: true });
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, worker, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

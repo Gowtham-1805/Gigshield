@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
+import { useAuth } from '@/lib/auth-context';
 
 import { AccountStep } from '@/components/onboarding/AccountStep';
 import { PlatformStep } from '@/components/onboarding/PlatformStep';
@@ -25,6 +26,7 @@ const stepMeta: Record<Step, { title: string; desc: string }> = {
 };
 
 export default function SignupPage() {
+  const { user, worker, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>('account');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +37,21 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [zones, setZones] = useState<Tables<'zones'>[]>([]);
   const navigate = useNavigate();
+
+  // If already authenticated with completed profile, redirect to worker
+  useEffect(() => {
+    if (!authLoading && user && worker?.zone_id) {
+      navigate('/worker', { replace: true });
+    }
+  }, [authLoading, user, worker, navigate]);
+
+  // If user is authenticated (e.g. Google OAuth) but hasn't completed onboarding, skip account step
+  useEffect(() => {
+    if (!authLoading && user && step === 'account') {
+      setName(worker?.name || user.user_metadata?.name || '');
+      setStep('platform');
+    }
+  }, [authLoading, user]);
 
   const stepIndex = steps.indexOf(step);
 
