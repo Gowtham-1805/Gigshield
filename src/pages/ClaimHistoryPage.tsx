@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerTypes } from '@/lib/mock-data';
 import { Link } from 'react-router-dom';
-import { AppealDialog } from '@/components/AppealDialog';
+import { AppealDialog } from '@/components/shared/AppealDialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors: Record<string, string> = {
