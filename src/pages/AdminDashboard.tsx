@@ -4,7 +4,7 @@ import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
   DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon
 } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,13 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { mockFinancials } from '@/lib/mock-data';
 import { useAuth } from '@/lib/auth-context';
-import AdminZoneMap from '@/components/AdminZoneMap';
-import FraudNetworkGraph from '@/components/FraudNetworkGraph';
-import DemoTriggerPanel from '@/components/DemoTriggerPanel';
-import CohortAnalyticsTab from '@/components/CohortAnalyticsTab';
-import TransparencyLedger from '@/components/TransparencyLedger';
+import AdminZoneMap from '@/components/admin/AdminZoneMap';
+import FraudNetworkGraph from '@/components/admin/FraudNetworkGraph';
+import DemoTriggerPanel from '@/components/admin/DemoTriggerPanel';
+import CohortAnalyticsTab from '@/components/admin/CohortAnalyticsTab';
+import TransparencyLedger from '@/components/admin/TransparencyLedger';
 import { supabase } from '@/integrations/supabase/client';
-import { NotificationBell } from '@/components/NotificationBell';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
