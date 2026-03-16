@@ -134,10 +134,10 @@ export default function LandingPage() {
                 variants={fadeUp} custom={4} initial="hidden" animate="visible"
               >
                 {[
-                  { value: '10K+', label: 'Workers Protected' },
-                  { value: '< 10 min', label: 'Avg Payout Time' },
-                  { value: '₹0', label: 'Paperwork Required' },
-                  { value: '24/7', label: 'AI Monitoring' },
+                  { value: t('landing.tenKPlus'), label: t('landing.workersProtectedStat') },
+                  { value: t('landing.lessThan10Min'), label: t('landing.avgPayoutTime') },
+                  { value: '₹0', label: t('landing.paperworkRequired') },
+                  { value: '24/7', label: t('landing.aiMonitoring') },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <p className="font-display font-bold text-2xl text-primary-foreground">{stat.value}</p>
