@@ -103,9 +103,9 @@ export default function LandingPage() {
                 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-8"
                 variants={fadeUp} custom={1} initial="hidden" animate="visible"
               >
-                <span className="text-gradient-hero">GigShield</span>
+                <span className="text-gradient-hero">{t('landing.tagline')}</span>
                 <br />
-                <span className="text-gradient-shield">"Predict. Protect. Pay."</span>
+                <span className="text-gradient-shield">{t('landing.subtitle')}</span>
               </motion.h1>
 
               <motion.p
