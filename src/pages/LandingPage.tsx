@@ -164,9 +164,9 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: CloudRain, title: 'Disruption Happens', desc: "Heavy rain, extreme heat, AQI spike, or curfew hits your zone.", gradient: 'from-primary/10 to-primary/5', iconBg: 'bg-primary/10 text-primary', border: 'border-primary/10' },
-              { icon: Activity, title: 'AI Auto-Detects', desc: 'Our AI monitors weather & events 24/7. Claims trigger automatically — no action needed.', gradient: 'from-accent/10 to-accent/5', iconBg: 'bg-accent/10 text-accent', border: 'border-accent/10' },
-              { icon: IndianRupee, title: 'Instant Payout', desc: 'Money hits your UPI within minutes. No forms. No waiting.', gradient: 'from-secondary/10 to-secondary/5', iconBg: 'bg-secondary/10 text-secondary', border: 'border-secondary/10' },
+              { icon: CloudRain, title: t('landing.step1Title'), desc: t('landing.step1Desc'), gradient: 'from-primary/10 to-primary/5', iconBg: 'bg-primary/10 text-primary', border: 'border-primary/10' },
+              { icon: Activity, title: t('landing.step2Title'), desc: t('landing.step2Desc'), gradient: 'from-accent/10 to-accent/5', iconBg: 'bg-accent/10 text-accent', border: 'border-accent/10' },
+              { icon: IndianRupee, title: t('landing.step3Title'), desc: t('landing.step3Desc'), gradient: 'from-secondary/10 to-secondary/5', iconBg: 'bg-secondary/10 text-secondary', border: 'border-secondary/10' },
             ].map((step, i) => (
               <motion.div
                 key={i}
