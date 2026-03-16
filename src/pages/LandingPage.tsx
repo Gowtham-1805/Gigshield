@@ -228,10 +228,10 @@ export default function LandingPage() {
                     </CardDescription>
                     <CardTitle className="font-display text-4xl mt-2">
                       ₹{plan.price}
-                      <span className="text-base font-normal text-muted-foreground">/week</span>
+                      <span className="text-base font-normal text-muted-foreground">{t('landing.perWeek')}</span>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Max weekly payout: <span className="font-semibold text-foreground">{plan.maxPayout}</span>
+                      {t('landing.maxPayout')}: <span className="font-semibold text-foreground">{plan.maxPayout}</span>
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3 pb-8">
