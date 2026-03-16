@@ -155,11 +155,11 @@ export default function LandingPage() {
         <div className="absolute inset-0 pattern-dots" />
         <div className="container mx-auto relative z-10">
           <motion.div className="text-center mb-20" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/20">How It Works</Badge>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/20">{t('landing.howItWorks')}</Badge>
             <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">
-              Protection in <span className="text-gradient-shield">3 Simple Steps</span>
+              {t('landing.threeSteps').split('<1>')[0]}<span className="text-gradient-shield">{t('landing.threeSteps').replace(/<\/?1>/g, '').replace(t('landing.threeSteps').split('<1>')[0], '')}</span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">No forms, no calls, no waiting. Everything happens automatically.</p>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">{t('landing.howItWorksSubtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
