@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { Shield, CloudRain, Zap, ChevronRight, Check, ArrowRight, Sparkles, Activity, Umbrella, IndianRupee } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
