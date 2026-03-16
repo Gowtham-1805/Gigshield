@@ -60,13 +60,14 @@ export default function LandingPage() {
             <span className="font-display font-bold text-lg tracking-tight">GigShield</span>
           </Link>
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             <ThemeToggle />
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="font-medium">Login</Button>
+              <Button variant="ghost" size="sm" className="font-medium">{t('common.login')}</Button>
             </Link>
             <Link to="/signup">
               <Button size="sm" className="gradient-shield text-primary-foreground border-0 hover:opacity-90 shadow-glow-blue font-medium">
-                Sign Up
+                {t('common.signup')}
               </Button>
             </Link>
           </div>
