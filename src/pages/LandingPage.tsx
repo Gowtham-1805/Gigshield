@@ -272,7 +272,7 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <motion.div className="text-center mb-16" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
             <h2 className="font-display text-3xl md:text-4xl font-bold">
-              Why Workers Trust <span className="text-gradient-shield">GigShield</span>
+              {t('landing.trustTitle').split('<1>')[0]}<span className="text-gradient-shield">GigShield</span>
             </h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
