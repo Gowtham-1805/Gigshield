@@ -277,10 +277,10 @@ export default function LandingPage() {
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {[
-              { icon: Zap, label: 'Instant payouts', value: '< 10 min', color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
-              { icon: Shield, label: 'Zero paperwork', value: '0 forms', color: 'text-secondary', bg: 'bg-secondary/5 border-secondary/10' },
-              { icon: IndianRupee, label: 'Direct UPI transfer', value: 'UPI', color: 'text-accent', bg: 'bg-accent/5 border-accent/10' },
-              { icon: Activity, label: 'Workers protected', value: '10K+', color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
+              { icon: Zap, label: t('landing.instantPayouts'), value: t('landing.lessThan10Min'), color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
+              { icon: Shield, label: t('landing.zeroPaperwork'), value: t('landing.zeroForms'), color: 'text-secondary', bg: 'bg-secondary/5 border-secondary/10' },
+              { icon: IndianRupee, label: t('landing.directUpi'), value: t('landing.upi'), color: 'text-accent', bg: 'bg-accent/5 border-accent/10' },
+              { icon: Activity, label: t('landing.workersProtected'), value: t('landing.tenKPlus'), color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
             ].map((item, i) => (
               <motion.div
                 key={i}
