@@ -21,32 +21,33 @@ const staggerContainer = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-const plans = [
-  {
-    tier: 'Basic',
-    price: '29–49',
-    maxPayout: '₹1,500',
-    features: ['Heavy rainfall coverage', 'Auto-claim processing', 'UPI payouts < 10 min'],
-    excluded: ['AQI protection', 'Social disruption cover', 'Priority support'],
-  },
-  {
-    tier: 'Standard',
-    price: '49–79',
-    maxPayout: '₹2,500',
-    popular: true,
-    features: ['Heavy rainfall coverage', 'Extreme weather alerts', 'AQI protection', 'Auto-claim processing', 'UPI payouts < 10 min'],
-    excluded: ['Social disruption cover'],
-  },
-  {
-    tier: 'Pro',
-    price: '79–129',
-    maxPayout: '₹4,000',
-    features: ['All weather coverage', 'AQI protection', 'Curfew & bandh cover', 'Cyclone coverage', 'Priority support', 'UPI payouts < 5 min'],
-    excluded: [],
-  },
-];
-
 export default function LandingPage() {
+  const { t } = useTranslation();
+
+  const plans = [
+    {
+      tier: t('landing.basic'),
+      price: '29–49',
+      maxPayout: '₹1,500',
+      features: [t('landing.heavyRainfall'), t('landing.autoClaimProcessing'), t('landing.upiPayouts10')],
+      excluded: [t('landing.aqiProtection'), t('landing.socialDisruption'), t('landing.prioritySupport')],
+    },
+    {
+      tier: t('landing.standard'),
+      price: '49–79',
+      maxPayout: '₹2,500',
+      popular: true,
+      features: [t('landing.heavyRainfall'), t('landing.extremeWeather'), t('landing.aqiProtection'), t('landing.autoClaimProcessing'), t('landing.upiPayouts10')],
+      excluded: [t('landing.socialDisruption')],
+    },
+    {
+      tier: t('landing.pro'),
+      price: '79–129',
+      maxPayout: '₹4,000',
+      features: [t('landing.allWeather'), t('landing.aqiProtection'), t('landing.curfewCover'), t('landing.cycloneCoverage'), t('landing.prioritySupport'), t('landing.upiPayouts5')],
+      excluded: [],
+    },
+  ];
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navbar */}
