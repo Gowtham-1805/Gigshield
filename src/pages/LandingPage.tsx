@@ -196,9 +196,9 @@ export default function LandingPage() {
         <div className="absolute inset-0 pattern-grid opacity-50" />
         <div className="container mx-auto relative z-10">
           <motion.div className="text-center mb-16" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/20">Pricing</Badge>
-            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">Choose Your Shield</h2>
-            <p className="text-muted-foreground text-lg">Weekly plans that fit your budget. Cancel anytime.</p>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/20">{t('landing.pricing')}</Badge>
+            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">{t('landing.chooseShield')}</h2>
+            <p className="text-muted-foreground text-lg">{t('landing.pricingSubtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
