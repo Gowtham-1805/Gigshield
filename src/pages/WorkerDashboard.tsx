@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote, Brain, TrendingUp, CheckCircle2, ArrowRight, IndianRupee, Smartphone } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -210,6 +211,7 @@ export default function WorkerDashboard() {
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell />
+            <LanguageToggle />
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />

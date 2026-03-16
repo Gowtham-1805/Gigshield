@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { Shield, CloudRain, Zap, ChevronRight, Check, ArrowRight, Sparkles, Activity, Umbrella, IndianRupee } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -19,32 +21,33 @@ const staggerContainer = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-const plans = [
-  {
-    tier: 'Basic',
-    price: '29–49',
-    maxPayout: '₹1,500',
-    features: ['Heavy rainfall coverage', 'Auto-claim processing', 'UPI payouts < 10 min'],
-    excluded: ['AQI protection', 'Social disruption cover', 'Priority support'],
-  },
-  {
-    tier: 'Standard',
-    price: '49–79',
-    maxPayout: '₹2,500',
-    popular: true,
-    features: ['Heavy rainfall coverage', 'Extreme weather alerts', 'AQI protection', 'Auto-claim processing', 'UPI payouts < 10 min'],
-    excluded: ['Social disruption cover'],
-  },
-  {
-    tier: 'Pro',
-    price: '79–129',
-    maxPayout: '₹4,000',
-    features: ['All weather coverage', 'AQI protection', 'Curfew & bandh cover', 'Cyclone coverage', 'Priority support', 'UPI payouts < 5 min'],
-    excluded: [],
-  },
-];
-
 export default function LandingPage() {
+  const { t } = useTranslation();
+
+  const plans = [
+    {
+      tier: t('landing.basic'),
+      price: '29–49',
+      maxPayout: '₹1,500',
+      features: [t('landing.heavyRainfall'), t('landing.autoClaimProcessing'), t('landing.upiPayouts10')],
+      excluded: [t('landing.aqiProtection'), t('landing.socialDisruption'), t('landing.prioritySupport')],
+    },
+    {
+      tier: t('landing.standard'),
+      price: '49–79',
+      maxPayout: '₹2,500',
+      popular: true,
+      features: [t('landing.heavyRainfall'), t('landing.extremeWeather'), t('landing.aqiProtection'), t('landing.autoClaimProcessing'), t('landing.upiPayouts10')],
+      excluded: [t('landing.socialDisruption')],
+    },
+    {
+      tier: t('landing.pro'),
+      price: '79–129',
+      maxPayout: '₹4,000',
+      features: [t('landing.allWeather'), t('landing.aqiProtection'), t('landing.curfewCover'), t('landing.cycloneCoverage'), t('landing.prioritySupport'), t('landing.upiPayouts5')],
+      excluded: [],
+    },
+  ];
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navbar */}
@@ -57,13 +60,14 @@ export default function LandingPage() {
             <span className="font-display font-bold text-lg tracking-tight">GigShield</span>
           </Link>
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             <ThemeToggle />
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="font-medium">Login</Button>
+              <Button variant="ghost" size="sm" className="font-medium">{t('common.login')}</Button>
             </Link>
             <Link to="/signup">
               <Button size="sm" className="gradient-shield text-primary-foreground border-0 hover:opacity-90 shadow-glow-blue font-medium">
-                Sign Up
+                {t('common.signup')}
               </Button>
             </Link>
           </div>
@@ -91,7 +95,7 @@ export default function LandingPage() {
               <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
                 <Badge className="mb-8 bg-primary-foreground/10 text-primary-foreground/90 border-primary-foreground/20 px-5 py-2 text-sm font-medium backdrop-blur-sm">
                   <Sparkles className="w-4 h-4 mr-2" />
-                  AI-Powered Parametric Insurance
+                  {t('landing.aiPowered')}
                 </Badge>
               </motion.div>
 
@@ -99,27 +103,27 @@ export default function LandingPage() {
                 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-8"
                 variants={fadeUp} custom={1} initial="hidden" animate="visible"
               >
-                <span className="text-gradient-hero">GigShield</span>
+                <span className="text-gradient-hero">{t('landing.tagline')}</span>
                 <br />
-                <span className="text-gradient-shield">"Predict. Protect. Pay."</span>
+                <span className="text-gradient-shield">{t('landing.subtitle')}</span>
               </motion.h1>
 
               <motion.p
                 className="text-lg md:text-xl text-primary-foreground/60 max-w-2xl mx-auto mb-12 leading-relaxed"
                 variants={fadeUp} custom={2} initial="hidden" animate="visible"
               >
-                Automatic income protection for India's gig workers. Zero paperwork. Instant UPI payouts. Weekly plans starting at ₹29.
+                {t('landing.description')}
               </motion.p>
 
               <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp} custom={3} initial="hidden" animate="visible">
                 <Link to="/signup">
                   <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-lg px-10 h-14 hover:opacity-90 animate-pulse-shield shadow-glow-blue font-semibold">
-                    Get Protected Now <ArrowRight className="w-5 h-5 ml-1" />
+                    {t('landing.getProtected')} <ArrowRight className="w-5 h-5 ml-1" />
                   </Button>
                 </Link>
                 <a href="#pricing">
                   <Button size="lg" variant="ghost" className="text-lg px-8 h-14 border border-white/30 text-white hover:bg-white/10 hover:text-white">
-                    View Plans
+                    {t('landing.viewPlans')}
                   </Button>
                 </a>
               </motion.div>
@@ -130,10 +134,10 @@ export default function LandingPage() {
                 variants={fadeUp} custom={4} initial="hidden" animate="visible"
               >
                 {[
-                  { value: '10K+', label: 'Workers Protected' },
-                  { value: '< 10 min', label: 'Avg Payout Time' },
-                  { value: '₹0', label: 'Paperwork Required' },
-                  { value: '24/7', label: 'AI Monitoring' },
+                  { value: t('landing.tenKPlus'), label: t('landing.workersProtectedStat') },
+                  { value: t('landing.lessThan10Min'), label: t('landing.avgPayoutTime') },
+                  { value: '₹0', label: t('landing.paperworkRequired') },
+                  { value: '24/7', label: t('landing.aiMonitoring') },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <p className="font-display font-bold text-2xl text-primary-foreground">{stat.value}</p>
@@ -151,18 +155,18 @@ export default function LandingPage() {
         <div className="absolute inset-0 pattern-dots" />
         <div className="container mx-auto relative z-10">
           <motion.div className="text-center mb-20" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/20">How It Works</Badge>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/20">{t('landing.howItWorks')}</Badge>
             <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">
-              Protection in <span className="text-gradient-shield">3 Simple Steps</span>
+              {t('landing.threeSteps').split('<1>')[0]}<span className="text-gradient-shield">{t('landing.threeSteps').replace(/<\/?1>/g, '').replace(t('landing.threeSteps').split('<1>')[0], '')}</span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">No forms, no calls, no waiting. Everything happens automatically.</p>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">{t('landing.howItWorksSubtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: CloudRain, title: 'Disruption Happens', desc: "Heavy rain, extreme heat, AQI spike, or curfew hits your zone.", gradient: 'from-primary/10 to-primary/5', iconBg: 'bg-primary/10 text-primary', border: 'border-primary/10' },
-              { icon: Activity, title: 'AI Auto-Detects', desc: 'Our AI monitors weather & events 24/7. Claims trigger automatically — no action needed.', gradient: 'from-accent/10 to-accent/5', iconBg: 'bg-accent/10 text-accent', border: 'border-accent/10' },
-              { icon: IndianRupee, title: 'Instant Payout', desc: 'Money hits your UPI within minutes. No forms. No waiting.', gradient: 'from-secondary/10 to-secondary/5', iconBg: 'bg-secondary/10 text-secondary', border: 'border-secondary/10' },
+              { icon: CloudRain, title: t('landing.step1Title'), desc: t('landing.step1Desc'), gradient: 'from-primary/10 to-primary/5', iconBg: 'bg-primary/10 text-primary', border: 'border-primary/10' },
+              { icon: Activity, title: t('landing.step2Title'), desc: t('landing.step2Desc'), gradient: 'from-accent/10 to-accent/5', iconBg: 'bg-accent/10 text-accent', border: 'border-accent/10' },
+              { icon: IndianRupee, title: t('landing.step3Title'), desc: t('landing.step3Desc'), gradient: 'from-secondary/10 to-secondary/5', iconBg: 'bg-secondary/10 text-secondary', border: 'border-secondary/10' },
             ].map((step, i) => (
               <motion.div
                 key={i}
@@ -192,9 +196,9 @@ export default function LandingPage() {
         <div className="absolute inset-0 pattern-grid opacity-50" />
         <div className="container mx-auto relative z-10">
           <motion.div className="text-center mb-16" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/20">Pricing</Badge>
-            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">Choose Your Shield</h2>
-            <p className="text-muted-foreground text-lg">Weekly plans that fit your budget. Cancel anytime.</p>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/20">{t('landing.pricing')}</Badge>
+            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">{t('landing.chooseShield')}</h2>
+            <p className="text-muted-foreground text-lg">{t('landing.pricingSubtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -213,8 +217,8 @@ export default function LandingPage() {
                   )}
                   {plan.popular && (
                     <div className="absolute top-3 right-3">
-                      <Badge className="gradient-shield text-primary-foreground border-0 shadow-glow-blue text-xs">
-                        <Sparkles className="w-3 h-3 mr-1" /> Most Popular
+                     <Badge className="gradient-shield text-primary-foreground border-0 shadow-glow-blue text-xs">
+                        <Sparkles className="w-3 h-3 mr-1" /> {t('landing.mostPopular')}
                       </Badge>
                     </div>
                   )}
@@ -224,10 +228,10 @@ export default function LandingPage() {
                     </CardDescription>
                     <CardTitle className="font-display text-4xl mt-2">
                       ₹{plan.price}
-                      <span className="text-base font-normal text-muted-foreground">/week</span>
+                      <span className="text-base font-normal text-muted-foreground">{t('landing.perWeek')}</span>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Max weekly payout: <span className="font-semibold text-foreground">{plan.maxPayout}</span>
+                      {t('landing.maxPayout')}: <span className="font-semibold text-foreground">{plan.maxPayout}</span>
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3 pb-8">
@@ -251,7 +255,7 @@ export default function LandingPage() {
                           ? 'gradient-shield text-primary-foreground border-0 shadow-glow-blue hover:opacity-90' 
                           : ''
                       }`} variant={plan.popular ? 'default' : 'outline'}>
-                        Get Protected
+                        {t('landing.getProtected')}
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
                     </Link>
@@ -268,15 +272,15 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <motion.div className="text-center mb-16" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
             <h2 className="font-display text-3xl md:text-4xl font-bold">
-              Why Workers Trust <span className="text-gradient-shield">GigShield</span>
+              {t('landing.trustTitle').split('<1>')[0]}<span className="text-gradient-shield">GigShield</span>
             </h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {[
-              { icon: Zap, label: 'Instant payouts', value: '< 10 min', color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
-              { icon: Shield, label: 'Zero paperwork', value: '0 forms', color: 'text-secondary', bg: 'bg-secondary/5 border-secondary/10' },
-              { icon: IndianRupee, label: 'Direct UPI transfer', value: 'UPI', color: 'text-accent', bg: 'bg-accent/5 border-accent/10' },
-              { icon: Activity, label: 'Workers protected', value: '10K+', color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
+              { icon: Zap, label: t('landing.instantPayouts'), value: t('landing.lessThan10Min'), color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
+              { icon: Shield, label: t('landing.zeroPaperwork'), value: t('landing.zeroForms'), color: 'text-secondary', bg: 'bg-secondary/5 border-secondary/10' },
+              { icon: IndianRupee, label: t('landing.directUpi'), value: t('landing.upi'), color: 'text-accent', bg: 'bg-accent/5 border-accent/10' },
+              { icon: Activity, label: t('landing.workersProtected'), value: t('landing.tenKPlus'), color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -304,15 +308,15 @@ export default function LandingPage() {
             <div className="absolute inset-0 pattern-grid opacity-20" />
             <div className="relative z-10 text-center">
               <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-                Ready to protect your income?
+                {t('landing.readyToProtect')}
               </h2>
               <p className="text-primary-foreground/60 text-lg mb-8 max-w-xl mx-auto">
-                Join thousands of gig workers who never worry about lost earnings due to weather or disruptions.
+                {t('landing.readySubtitle')}
               </p>
               <div className="flex justify-center">
                 <Link to="/signup">
                   <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-base md:text-lg px-6 md:px-10 h-12 md:h-14 hover:opacity-90 shadow-glow-blue font-semibold">
-                    Start Now — ₹29/week <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
+                    {t('landing.startNow')} <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
                   </Button>
                 </Link>
               </div>
@@ -331,12 +335,12 @@ export default function LandingPage() {
             <span className="font-display font-bold">GigShield</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2026 GigShield. Protecting India's gig workforce.
+            {t('landing.footer')}
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.privacy')}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.terms')}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.contact')}</a>
           </div>
         </div>
       </footer>
