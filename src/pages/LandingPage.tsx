@@ -255,7 +255,7 @@ export default function LandingPage() {
                           ? 'gradient-shield text-primary-foreground border-0 shadow-glow-blue hover:opacity-90' 
                           : ''
                       }`} variant={plan.popular ? 'default' : 'outline'}>
-                        Get Protected
+                        {t('landing.getProtected')}
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
                     </Link>
