@@ -112,7 +112,7 @@ export default function LandingPage() {
                 className="text-lg md:text-xl text-primary-foreground/60 max-w-2xl mx-auto mb-12 leading-relaxed"
                 variants={fadeUp} custom={2} initial="hidden" animate="visible"
               >
-                Automatic income protection for India's gig workers. Zero paperwork. Instant UPI payouts. Weekly plans starting at ₹29.
+                {t('landing.description')}
               </motion.p>
 
               <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp} custom={3} initial="hidden" animate="visible">
