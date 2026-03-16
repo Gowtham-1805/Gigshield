@@ -335,12 +335,12 @@ export default function LandingPage() {
             <span className="font-display font-bold">GigShield</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2026 GigShield. Protecting India's gig workforce.
+            {t('landing.footer')}
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.privacy')}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.terms')}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{t('landing.contact')}</a>
           </div>
         </div>
       </footer>
