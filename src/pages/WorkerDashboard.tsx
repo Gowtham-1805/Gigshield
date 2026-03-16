@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Home, FileText, User, Bell, LogOut, Loader2, Banknote, Brain, TrendingUp, CheckCircle2, ArrowRight, IndianRupee, Smartphone } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
