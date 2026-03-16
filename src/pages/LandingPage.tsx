@@ -95,7 +95,7 @@ export default function LandingPage() {
               <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
                 <Badge className="mb-8 bg-primary-foreground/10 text-primary-foreground/90 border-primary-foreground/20 px-5 py-2 text-sm font-medium backdrop-blur-sm">
                   <Sparkles className="w-4 h-4 mr-2" />
-                  AI-Powered Parametric Insurance
+                  {t('landing.aiPowered')}
                 </Badge>
               </motion.div>
 
