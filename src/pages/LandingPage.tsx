@@ -217,8 +217,8 @@ export default function LandingPage() {
                   )}
                   {plan.popular && (
                     <div className="absolute top-3 right-3">
-                      <Badge className="gradient-shield text-primary-foreground border-0 shadow-glow-blue text-xs">
-                        <Sparkles className="w-3 h-3 mr-1" /> Most Popular
+                     <Badge className="gradient-shield text-primary-foreground border-0 shadow-glow-blue text-xs">
+                        <Sparkles className="w-3 h-3 mr-1" /> {t('landing.mostPopular')}
                       </Badge>
                     </div>
                   )}
