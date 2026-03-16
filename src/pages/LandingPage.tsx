@@ -308,15 +308,15 @@ export default function LandingPage() {
             <div className="absolute inset-0 pattern-grid opacity-20" />
             <div className="relative z-10 text-center">
               <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-                Ready to protect your income?
+                {t('landing.readyToProtect')}
               </h2>
               <p className="text-primary-foreground/60 text-lg mb-8 max-w-xl mx-auto">
-                Join thousands of gig workers who never worry about lost earnings due to weather or disruptions.
+                {t('landing.readySubtitle')}
               </p>
               <div className="flex justify-center">
                 <Link to="/signup">
                   <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-base md:text-lg px-6 md:px-10 h-12 md:h-14 hover:opacity-90 shadow-glow-blue font-semibold">
-                    Start Now — ₹29/week <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
+                    {t('landing.startNow')} <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-1" />
                   </Button>
                 </Link>
               </div>
