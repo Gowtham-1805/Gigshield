@@ -118,12 +118,12 @@ export default function LandingPage() {
               <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={fadeUp} custom={3} initial="hidden" animate="visible">
                 <Link to="/signup">
                   <Button size="lg" className="gradient-shield text-primary-foreground border-0 text-lg px-10 h-14 hover:opacity-90 animate-pulse-shield shadow-glow-blue font-semibold">
-                    Get Protected Now <ArrowRight className="w-5 h-5 ml-1" />
+                    {t('landing.getProtected')} <ArrowRight className="w-5 h-5 ml-1" />
                   </Button>
                 </Link>
                 <a href="#pricing">
                   <Button size="lg" variant="ghost" className="text-lg px-8 h-14 border border-white/30 text-white hover:bg-white/10 hover:text-white">
-                    View Plans
+                    {t('landing.viewPlans')}
                   </Button>
                 </a>
               </motion.div>
