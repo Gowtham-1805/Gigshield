@@ -211,6 +211,7 @@ export default function WorkerDashboard() {
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell />
+            <LanguageToggle />
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
