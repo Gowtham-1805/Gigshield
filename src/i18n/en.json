@@ -16,7 +16,18 @@
     "refresh": "Refresh",
     "returnHome": "Return to Home",
     "demo": "Demo mode",
-    "noRealCharge": "Simulated payment • Demo mode — no real charge"
+    "noRealCharge": "Simulated payment • Demo mode — no real charge",
+    "done": "Done",
+    "all": "All",
+    "plan": "Plan",
+    "amount": "Amount",
+    "status": "Status",
+    "transactionId": "Transaction ID",
+    "time": "Time",
+    "recipient": "Recipient",
+    "paid": "Paid",
+    "credited": "Credited",
+    "weekly": "Weekly"
   },
   "landing": {
     "tagline": "GigShield",
@@ -112,7 +123,9 @@
     "email": "Email",
     "emailPlaceholder": "you@example.com",
     "password": "Password",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "createAccount": "Create Account",
+    "continueGoogle": "Continue with Google"
   },
   "platform": {
     "zomato": "Zomato",
@@ -197,7 +210,9 @@
     "alerts": "Alerts",
     "profile": "Profile",
     "policyRenewal": "GigShield Policy Renewal",
-    "renewalPremium": "Renewal Premium"
+    "renewalPremium": "Renewal Premium",
+    "activateRenewal": "🛡️ Activate Renewal",
+    "policyRenewed": "🛡️ Policy renewed for another week!"
   },
   "claims": {
     "claimHistory": "Claim History",
@@ -284,7 +299,10 @@
     "gigshieldCovered": "GigShield Covered",
     "claimTimeline": "Claim Timeline",
     "timelineDesc": "History of your approved claims",
-    "loadingReport": "Loading your earnings report..."
+    "loadingReport": "Loading your earnings report...",
+    "noClaimsTitle": "No Claims Yet",
+    "noClaimsDesc": "When weather disruptions affect your zone, GigShield will automatically file claims and protect your income. Your coverage is active and monitoring.",
+    "claimBreakdown": "Claim-by-Claim Breakdown"
   },
   "predictions": {
     "title": "AI Risk Forecast",
@@ -304,7 +322,8 @@
     "affectedWorkers": "Affected Workers",
     "peakDay": "Peak Day",
     "estClaimsValue": "Est. Claims",
-    "gpsWorkers": "GPS-verified workers in zone"
+    "gpsWorkers": "GPS-verified workers in zone",
+    "noForecast": "No forecast data available. Add zones to start getting predictions."
   },
   "admin": {
     "title": "GigShield Admin",
@@ -347,7 +366,8 @@
     "claimDetailsDesc": "Full breakdown of this claim",
     "worker": "Worker",
     "trigger": "Trigger",
-    "chance": "{{pct}}% chance"
+    "chance": "{{pct}}% chance",
+    "signingIn": "Signing in..."
   },
   "resetPassword": {
     "title": "Set New Password",
@@ -383,5 +403,66 @@
     "hindi": "हिंदी",
     "tamil": "தமிழ்",
     "telugu": "తెలుగు"
+  },
+  "appeal": {
+    "title": "Appeal Claim",
+    "description": "Submit evidence and explain why this claim should be reconsidered.",
+    "reasonLabel": "Reason for Appeal",
+    "reasonPlaceholder": "Explain why you believe this claim was incorrectly flagged/rejected...",
+    "photoEvidence": "Photo Evidence (optional, max 3)",
+    "addPhoto": "Add Photo",
+    "uploadingEvidence": "Uploading evidence...",
+    "submittingAppeal": "Submitting appeal...",
+    "submitAppeal": "Submit Appeal",
+    "appealSubmitted": "Appeal submitted!",
+    "appealDesc": "Your appeal is now under review.",
+    "onlyImages": "Only images under 5MB are allowed"
+  },
+  "notification": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications yet"
+  },
+  "gps": {
+    "liveLocation": "Live Location",
+    "active": "Active",
+    "shareDesc": "Share your GPS to claim in <1>any zone</1> you're delivering in — not just your registered zone.",
+    "gpsLocation": "GPS Location",
+    "nearestZone": "Nearest Zone",
+    "crossZone": "✨ Cross-zone eligible — you can claim in {{zone}} too!",
+    "locationExpired": "⏰ Location expired (>1hr ago)",
+    "noLocation": "📍 No location shared yet",
+    "gettingLocation": "Getting location...",
+    "updateLocation": "Update Location",
+    "shareMyLocation": "Share My Location",
+    "coverageRadius": "Coverage radius: 10km from zone center • Updates expire after 1 hour",
+    "locationShared": "📍 Location shared! Cross-zone claims are now enabled.",
+    "simulatedGps": "📍 Using simulated GPS location (demo mode)"
+  },
+  "payoutSim": {
+    "instantPayout": "GigShield Instant Payout",
+    "upiTransfer": "UPI Transfer",
+    "payoutAmount": "Payout Amount",
+    "initiating": "Initiating secure transfer...",
+    "verifying": "Verifying claim & fraud check...",
+    "processing": "Processing UPI transfer...",
+    "success": "Payout Successful!",
+    "upiId": "UPI ID",
+    "simulatedPayment": "Simulated payment • Powered by GigShield + Razorpay Test Mode"
+  },
+  "workerReport": {
+    "reportDisruption": "Report a Disruption",
+    "reportDesc": "Experiencing bad weather? Report it to initiate a claim.",
+    "heavyRain": "Heavy Rain",
+    "flooding": "Flooding",
+    "extremeHeat": "Extreme Heat",
+    "severeAqi": "Severe AQI",
+    "curfew": "Curfew/Bandh",
+    "cyclone": "Cyclone",
+    "submitting": "Submitting...",
+    "reportAndClaim": "Report & Claim",
+    "activeIncidents": "Active Incidents in Your Zone",
+    "activeIncidentsDesc": "Tap to file a claim against a detected incident.",
+    "fileClaim": "File Claim →"
   }
 }
