@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, KeyRound } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,29 +19,26 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for recovery token in URL hash
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     if (hashParams.get('type') === 'recovery') {
       setIsRecovery(true);
     }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('resetPassword.passwordMismatch'));
       return;
     }
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('resetPassword.passwordTooShort'));
       return;
     }
     setLoading(true);
@@ -49,7 +47,7 @@ export default function ResetPasswordPage() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Password updated successfully!');
+      toast.success(t('resetPassword.passwordUpdated'));
       navigate('/worker');
     }
   };
@@ -59,9 +57,9 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="shadow-elevated max-w-md w-full">
           <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Invalid or expired reset link. Please request a new one.</p>
+            <p className="text-muted-foreground">{t('resetPassword.invalidLink')}</p>
             <Link to="/login">
-              <Button className="mt-4">Go to Login</Button>
+              <Button className="mt-4">{t('resetPassword.goToLogin')}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -82,21 +80,21 @@ export default function ResetPasswordPage() {
             <div className="w-12 h-12 rounded-xl gradient-shield flex items-center justify-center mx-auto mb-4">
               <KeyRound className="w-7 h-7 text-primary-foreground" />
             </div>
-            <CardTitle className="font-display text-2xl">Set New Password</CardTitle>
-            <CardDescription>Choose a secure password for your account</CardDescription>
+            <CardTitle className="font-display text-2xl">{t('resetPassword.title')}</CardTitle>
+            <CardDescription>{t('resetPassword.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleReset} className="space-y-4">
               <div className="space-y-2">
-                <Label>New Password</Label>
+                <Label>{t('resetPassword.newPassword')}</Label>
                 <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
               </div>
               <div className="space-y-2">
-                <Label>Confirm Password</Label>
+                <Label>{t('resetPassword.confirmPassword')}</Label>
                 <Input type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
               </div>
               <Button type="submit" className="w-full gradient-shield text-primary-foreground border-0 h-11" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
+                {loading ? t('resetPassword.updating') : t('resetPassword.updatePassword')}
               </Button>
             </form>
           </CardContent>

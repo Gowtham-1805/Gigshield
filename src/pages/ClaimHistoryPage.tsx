@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, Filter, MessageSquarePlus } from 'lucide-react';
+import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerTypes } from '@/lib/mock-data';
 import { Link } from 'react-router-dom';
 import { AppealDialog } from '@/components/shared/AppealDialog';
+import { useTranslation } from 'react-i18next';
 import type { Tables } from '@/integrations/supabase/types';
 
 const statusColors: Record<string, string> = {
@@ -21,6 +22,7 @@ const statusColors: Record<string, string> = {
 const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function ClaimHistoryPage() {
+  const { t } = useTranslation();
   const { worker } = useAuth();
   const [claims, setClaims] = useState<(Tables<'claims'> & { payouts?: Tables<'payouts'>[] })[]>([]);
   const [filter, setFilter] = useState('all');
@@ -30,37 +32,20 @@ export default function ClaimHistoryPage() {
 
   const fetchData = async () => {
     if (!worker) return;
-    const { data: policies } = await supabase
-      .from('policies')
-      .select('id')
-      .eq('worker_id', worker.id);
-    
+    const { data: policies } = await supabase.from('policies').select('id').eq('worker_id', worker.id);
     if (!policies?.length) return;
     const policyIds = policies.map(p => p.id);
-
-    const { data: claimsData } = await supabase
-      .from('claims')
-      .select('*, payouts(*)')
-      .in('policy_id', policyIds)
-      .order('created_at', { ascending: false });
-
+    const { data: claimsData } = await supabase.from('claims').select('*, payouts(*)').in('policy_id', policyIds).order('created_at', { ascending: false });
     setClaims(claimsData || []);
     setTotalPaid((claimsData || []).filter(c => c.status === 'approved').reduce((s, c) => s + Number(c.amount), 0));
-
-    // Check which claims already have appeals
     const claimIds = (claimsData || []).map(c => c.id);
     if (claimIds.length > 0) {
-      const { data: appeals } = await supabase
-        .from('appeals')
-        .select('claim_id')
-        .in('claim_id', claimIds);
+      const { data: appeals } = await supabase.from('appeals').select('claim_id').in('claim_id', claimIds);
       setAppealedClaimIds(new Set((appeals || []).map((a: any) => a.claim_id)));
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [worker]);
+  useEffect(() => { fetchData(); }, [worker]);
 
   const filtered = filter === 'all' ? claims : claims.filter(c => c.status === filter);
   const canAppeal = (claim: Tables<'claims'>) =>
@@ -71,50 +56,45 @@ export default function ClaimHistoryPage() {
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="flex items-center h-14 px-4 gap-3">
           <Link to="/worker"><ArrowLeft className="w-5 h-5 text-muted-foreground" /></Link>
-          <h1 className="font-display font-bold">Claim History</h1>
+          <h1 className="font-display font-bold">{t('claims.claimHistory')}</h1>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-lg space-y-5">
-        {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="shadow-card">
             <CardContent className="p-3 text-center">
               <p className="font-display font-bold text-xl">{claims.length}</p>
-              <p className="text-[10px] text-muted-foreground">Total Claims</p>
+              <p className="text-[10px] text-muted-foreground">{t('claims.totalClaims')}</p>
             </CardContent>
           </Card>
           <Card className="shadow-card">
             <CardContent className="p-3 text-center">
               <p className="font-display font-bold text-xl text-secondary">₹{totalPaid.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground">Total Received</p>
+              <p className="text-[10px] text-muted-foreground">{t('claims.totalReceived')}</p>
             </CardContent>
           </Card>
           <Card className="shadow-card">
             <CardContent className="p-3 text-center">
               <p className="font-display font-bold text-xl">{claims.filter(c => c.status === 'approved').length}</p>
-              <p className="text-[10px] text-muted-foreground">Approved</p>
+              <p className="text-[10px] text-muted-foreground">{t('claims.approved')}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filter Tabs */}
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="w-full">
-            <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-            <TabsTrigger value="approved" className="flex-1">Approved</TabsTrigger>
-            <TabsTrigger value="processing" className="flex-1">Processing</TabsTrigger>
-            <TabsTrigger value="flagged" className="flex-1">Flagged</TabsTrigger>
+            <TabsTrigger value="all" className="flex-1">{t('claims.all')}</TabsTrigger>
+            <TabsTrigger value="approved" className="flex-1">{t('claims.approved')}</TabsTrigger>
+            <TabsTrigger value="processing" className="flex-1">{t('claims.processing')}</TabsTrigger>
+            <TabsTrigger value="flagged" className="flex-1">{t('claims.flagged')}</TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* Claims List */}
         <div className="space-y-3">
           {filtered.length === 0 && (
             <Card className="shadow-card">
-              <CardContent className="p-8 text-center text-muted-foreground">
-                No claims found 🛡️
-              </CardContent>
+              <CardContent className="p-8 text-center text-muted-foreground">{t('claims.noClaims')}</CardContent>
             </Card>
           )}
           {filtered.map((claim, i) => {
@@ -137,37 +117,31 @@ export default function ClaimHistoryPage() {
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
                       <div>
-                        <p className="text-xs text-muted-foreground">Claim Amount</p>
+                        <p className="text-xs text-muted-foreground">{t('claims.claimAmount')}</p>
                         <p className="font-display font-bold text-lg">₹{Number(claim.amount).toLocaleString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Fraud Score</p>
+                        <p className="text-xs text-muted-foreground">{t('claims.fraudScore')}</p>
                         <p className={`font-medium text-sm ${claim.fraud_score > 0.5 ? 'text-destructive' : claim.fraud_score > 0.2 ? 'text-accent' : 'text-secondary'}`}>
-                          {(claim.fraud_score * 100).toFixed(0)}% risk
+                          {(claim.fraud_score * 100).toFixed(0)}% {t('claims.risk')}
                         </p>
                       </div>
                     </div>
                     {payout && (
                       <div className="mt-2 p-2 rounded-lg bg-secondary/5 text-xs">
-                        <span className="text-secondary font-medium">💸 Payout: {payout.status}</span>
+                        <span className="text-secondary font-medium">💸 {t('claims.payout')}: {payout.status}</span>
                         {payout.upi_id && <span className="text-muted-foreground ml-2">via {payout.upi_id}</span>}
                       </div>
                     )}
-                    {/* Appeal Button */}
                     {canAppeal(claim) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full mt-3 border-accent text-accent hover:bg-accent/10"
-                        onClick={() => setAppealClaim(claim)}
-                      >
+                      <Button size="sm" variant="outline" className="w-full mt-3 border-accent text-accent hover:bg-accent/10" onClick={() => setAppealClaim(claim)}>
                         <MessageSquarePlus className="w-4 h-4 mr-2" />
-                        Appeal This Claim
+                        {t('claims.appealClaim')}
                       </Button>
                     )}
                     {hasAppeal && (
                       <div className="mt-2 p-2 rounded-lg bg-accent/5 text-xs text-center">
-                        <span className="text-accent font-medium">📨 Appeal submitted — under review</span>
+                        <span className="text-accent font-medium">{t('claims.appealSubmitted')}</span>
                       </div>
                     )}
                   </CardContent>
@@ -178,12 +152,7 @@ export default function ClaimHistoryPage() {
         </div>
       </main>
 
-      <AppealDialog
-        open={!!appealClaim}
-        onOpenChange={(open) => !open && setAppealClaim(null)}
-        claim={appealClaim}
-        onSuccess={fetchData}
-      />
+      <AppealDialog open={!!appealClaim} onOpenChange={(open) => !open && setAppealClaim(null)} claim={appealClaim} onSuccess={fetchData} />
     </div>
   );
 }

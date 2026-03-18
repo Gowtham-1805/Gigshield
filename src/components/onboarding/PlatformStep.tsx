@@ -1,14 +1,15 @@
 import { ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const platforms = [
-  { id: 'Zomato', label: 'Zomato', icon: '🍕' },
-  { id: 'Swiggy', label: 'Swiggy', icon: '🛵' },
-  { id: 'Zepto', label: 'Zepto', icon: '⚡' },
-  { id: 'Blinkit', label: 'Blinkit', icon: '🟡' },
-  { id: 'Amazon', label: 'Amazon', icon: '📦' },
-  { id: 'Flipkart', label: 'Flipkart', icon: '🛒' },
-  { id: 'Dunzo', label: 'Dunzo', icon: '🏃' },
-  { id: 'Other', label: 'Other', icon: '📋' },
+  { id: 'Zomato', key: 'zomato', icon: '🍕' },
+  { id: 'Swiggy', key: 'swiggy', icon: '🛵' },
+  { id: 'Zepto', key: 'zepto', icon: '⚡' },
+  { id: 'Blinkit', key: 'blinkit', icon: '🟡' },
+  { id: 'Amazon', key: 'amazon', icon: '📦' },
+  { id: 'Flipkart', key: 'flipkart', icon: '🛒' },
+  { id: 'Dunzo', key: 'dunzo', icon: '🏃' },
+  { id: 'Other', key: 'other', icon: '📋' },
 ];
 
 interface PlatformStepProps {
@@ -17,6 +18,8 @@ interface PlatformStepProps {
 }
 
 export function PlatformStep({ platform, onSelect }: PlatformStepProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3">
       {platforms.map((p) => (
@@ -28,7 +31,7 @@ export function PlatformStep({ platform, onSelect }: PlatformStepProps) {
           }`}
         >
           <span className="text-2xl">{p.icon}</span>
-          <span className="font-medium">{p.label}</span>
+          <span className="font-medium">{t(`platform.${p.key}`)}</span>
           <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
         </button>
       ))}

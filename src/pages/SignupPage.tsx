@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Shield, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,15 +18,8 @@ import { PlanStep } from '@/components/onboarding/PlanStep';
 const steps = ['account', 'platform', 'zone', 'shield', 'plan'] as const;
 type Step = typeof steps[number];
 
-const stepMeta: Record<Step, { title: string; desc: string }> = {
-  account: { title: 'Create Account', desc: 'Start protecting your income in 90 seconds' },
-  platform: { title: 'Your Platform', desc: 'Which delivery platform do you work on?' },
-  zone: { title: 'Your Zone', desc: 'Select your primary delivery zone' },
-  shield: { title: 'Your Shield Score', desc: 'Understand how your protection works' },
-  plan: { title: 'Choose Your Shield', desc: 'Pick the coverage that fits your needs' },
-};
-
 export default function SignupPage() {
+  const { t } = useTranslation();
   const { user, worker, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>('account');
   const [email, setEmail] = useState('');
@@ -38,14 +32,20 @@ export default function SignupPage() {
   const [zones, setZones] = useState<Tables<'zones'>[]>([]);
   const navigate = useNavigate();
 
-  // If already authenticated with completed profile, redirect to worker
+  const stepMeta: Record<Step, { title: string; desc: string }> = {
+    account: { title: t('signup.createAccount'), desc: t('signup.createAccountDesc') },
+    platform: { title: t('signup.yourPlatform'), desc: t('signup.platformDesc') },
+    zone: { title: t('signup.yourZone'), desc: t('signup.zoneDesc') },
+    shield: { title: t('signup.shieldScore'), desc: t('signup.shieldScoreDesc') },
+    plan: { title: t('signup.choosePlan'), desc: t('signup.choosePlanDesc') },
+  };
+
   useEffect(() => {
     if (!authLoading && user && worker?.zone_id) {
       navigate('/worker', { replace: true });
     }
   }, [authLoading, user, worker, navigate]);
 
-  // If user is authenticated (e.g. Google OAuth) but hasn't completed onboarding, skip account step
   useEffect(() => {
     if (!authLoading && user && step === 'account') {
       setName(worker?.name || user.user_metadata?.name || '');
@@ -85,7 +85,6 @@ export default function SignupPage() {
       const startDate = new Date();
       const endDate = new Date(Date.now() + 7 * 86400000);
 
-      // We'll get the premium from the plan step — use defaults as fallback
       const defaultPlans: Record<string, { premium: number; payout: number }> = {
         BASIC: { premium: 39, payout: 1500 },
         STANDARD: { premium: 64, payout: 2500 },
@@ -103,7 +102,7 @@ export default function SignupPage() {
         status: 'active',
       });
 
-      toast.success("You're protected! Welcome to GigShield. 🛡️");
+      toast.success(t('signup.protectedWelcome'));
       navigate('/worker');
     } catch (e: any) {
       toast.error(e.message || 'Setup failed');
@@ -121,14 +120,14 @@ export default function SignupPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
         <div className="flex items-center justify-between mb-8">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to home
+            <ArrowLeft className="w-4 h-4" /> {t('common.back')}
           </Link>
           {stepIndex > 0 && (
             <button
               onClick={() => setStep(steps[stepIndex - 1])}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              ← Previous step
+              {t('signup.previousStep')}
             </button>
           )}
         </div>
@@ -139,7 +138,7 @@ export default function SignupPage() {
             <div key={s} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`} />
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mb-6">Step {stepIndex + 1} of {steps.length}</p>
+        <p className="text-xs text-muted-foreground mb-6">{t('signup.step', { current: stepIndex + 1, total: steps.length })}</p>
 
         <Card className="shadow-elevated">
           <CardHeader className="text-center">
@@ -187,8 +186,8 @@ export default function SignupPage() {
 
             {step === 'account' && (
               <p className="text-center text-sm text-muted-foreground mt-6">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary font-medium hover:underline">Login</Link>
+                {t('signup.alreadyHaveAccount')}{' '}
+                <Link to="/login" className="text-primary font-medium hover:underline">{t('common.login')}</Link>
               </p>
             )}
           </CardContent>
