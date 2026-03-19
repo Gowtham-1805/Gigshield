@@ -394,5 +394,66 @@
     "hindi": "हिंदी",
     "tamil": "தமிழ்",
     "telugu": "తెలుగు"
+  },
+  "appeal": {
+    "title": "क्लेम अपील",
+    "description": "सबूत जमा करें और बताएं कि इस क्लेम पर पुनर्विचार क्यों होना चाहिए।",
+    "reasonLabel": "अपील का कारण",
+    "reasonPlaceholder": "बताएं कि आपको क्यों लगता है कि यह क्लेम गलत तरीके से फ्लैग/रिजेक्ट किया गया...",
+    "photoEvidence": "फोटो सबूत (वैकल्पिक, अधिकतम 3)",
+    "addPhoto": "फोटो जोड़ें",
+    "uploadingEvidence": "सबूत अपलोड हो रहा है...",
+    "submittingAppeal": "अपील सबमिट हो रही है...",
+    "submitAppeal": "अपील सबमिट करें",
+    "appealSubmitted": "अपील सबमिट हो गई!",
+    "appealDesc": "आपकी अपील अब समीक्षा में है।",
+    "onlyImages": "केवल 5MB से कम की इमेज अनुमत हैं"
+  },
+  "notification": {
+    "title": "सूचनाएं",
+    "markAllRead": "सब पढ़ा मार्क करें",
+    "noNotifications": "अभी कोई सूचना नहीं"
+  },
+  "gps": {
+    "liveLocation": "लाइव लोकेशन",
+    "active": "सक्रिय",
+    "shareDesc": "अपने GPS से क्लेम करें किसी भी ज़ोन में जहां आप डिलीवरी कर रहे हैं।",
+    "gpsLocation": "GPS लोकेशन",
+    "nearestZone": "निकटतम ज़ोन",
+    "crossZone": "✨ क्रॉस-ज़ोन योग्य — आप {{zone}} में भी क्लेम कर सकते हैं!",
+    "locationExpired": "⏰ लोकेशन एक्सपायर हो गई (>1 घंटा पहले)",
+    "noLocation": "📍 अभी तक कोई लोकेशन शेयर नहीं की",
+    "gettingLocation": "लोकेशन ली जा रही है...",
+    "updateLocation": "लोकेशन अपडेट करें",
+    "shareMyLocation": "मेरी लोकेशन शेयर करें",
+    "coverageRadius": "कवरेज रेडियस: ज़ोन सेंटर से 10km • 1 घंटे बाद एक्सपायर",
+    "locationShared": "📍 लोकेशन शेयर हो गई! क्रॉस-ज़ोन क्लेम अब सक्रिय।",
+    "simulatedGps": "📍 सिम्युलेटेड GPS लोकेशन (डेमो मोड)"
+  },
+  "payoutSim": {
+    "instantPayout": "GigShield इंस्टेंट पेआउट",
+    "upiTransfer": "UPI ट्रांसफर",
+    "payoutAmount": "पेआउट राशि",
+    "initiating": "सुरक्षित ट्रांसफर शुरू हो रहा है...",
+    "verifying": "क्लेम और फ्रॉड चेक हो रहा है...",
+    "processing": "UPI ट्रांसफर प्रोसेस हो रहा है...",
+    "success": "पेआउट सफल!",
+    "upiId": "UPI ID",
+    "simulatedPayment": "सिम्युलेटेड पेमेंट • GigShield + Razorpay टेस्ट मोड"
+  },
+  "workerReport": {
+    "reportDisruption": "रुकावट रिपोर्ट करें",
+    "reportDesc": "खराब मौसम का अनुभव कर रहे हैं? क्लेम शुरू करने के लिए रिपोर्ट करें।",
+    "heavyRain": "भारी बारिश",
+    "flooding": "बाढ़",
+    "extremeHeat": "अत्यधिक गर्मी",
+    "severeAqi": "गंभीर AQI",
+    "curfew": "कर्फ्यू/बंद",
+    "cyclone": "चक्रवात",
+    "submitting": "सबमिट हो रहा है...",
+    "reportAndClaim": "रिपोर्ट और क्लेम करें",
+    "activeIncidents": "आपके ज़ोन में सक्रिय घटनाएं",
+    "activeIncidentsDesc": "घटना के खिलाफ क्लेम दर्ज करने के लिए टैप करें।",
+    "fileClaim": "क्लेम करें →"
   }
 }
