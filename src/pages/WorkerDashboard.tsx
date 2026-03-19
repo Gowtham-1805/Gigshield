@@ -18,6 +18,7 @@ import GpsLocationCard from '@/components/worker/GpsLocationCard';
 import { toast } from 'sonner';
 import { sendMockWhatsAppPremiumPaid } from '@/lib/whatsapp-mock';
 import type { Tables } from '@/integrations/supabase/types';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   approved: 'bg-secondary/10 text-secondary border-secondary/20',
@@ -28,6 +29,7 @@ const statusColors = {
 const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
 
 export default function WorkerDashboard() {
+  const { t } = useTranslation();
   const { worker, user, signOut, refreshWorker } = useAuth();
   const navigate = useNavigate();
   const [policy, setPolicy] = useState<Tables<'policies'> | null>(null);
@@ -60,7 +62,6 @@ export default function WorkerDashboard() {
       const weekClaims = (claimsData || []).filter(c => c.created_at > weekAgo && c.status === 'approved');
       setClaimedThisWeek(weekClaims.reduce((s, c) => s + Number(c.amount), 0));
 
-      // Fetch payouts for the worker's claims
       if (claimsData?.length) {
         const claimIds = claimsData.map(c => c.id);
         const { data: payoutsData } = await supabase
@@ -92,17 +93,14 @@ export default function WorkerDashboard() {
         }
       }
 
-      // Fetch incidents: from registered zone AND GPS-nearby zones
       const dayAgo = new Date(Date.now() - 24 * 3600000).toISOString();
       const { data: incidents } = await supabase
         .from('incidents').select('*')
         .gte('created_at', dayAgo).order('created_at', { ascending: false });
       
-      // Filter to registered zone + GPS-nearby zones
       if (incidents && worker) {
         let eligibleIncidents = incidents.filter(i => i.zone_id === worker.zone_id);
         
-        // If worker has GPS, also include incidents from nearby zones
         if (worker.last_lat && worker.last_lng) {
           const { data: zones } = await supabase.from('zones').select('id, lat, lng');
           if (zones) {
@@ -170,7 +168,7 @@ export default function WorkerDashboard() {
       const { data, error } = await supabase.functions.invoke('renew-policy', { body: { policy_id: policy.id } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success('🛡️ Policy renewed for another week!');
+      toast.success(t('worker.policyRenewed'));
       sendMockWhatsAppPremiumPaid(Number(policy.premium), policy.tier);
       const { data: newPol } = await supabase
         .from('policies').select('*').eq('worker_id', worker!.id).eq('status', 'active')
@@ -182,18 +180,18 @@ export default function WorkerDashboard() {
 
   const renewStageConfig: Record<string, { icon: string; label: string; color: string }> = {
     idle: { icon: '', label: '', color: '' },
-    initiating: { icon: '🔐', label: 'Initiating UPI payment...', color: 'text-primary' },
-    verifying: { icon: '🔍', label: 'Verifying renewal details...', color: 'text-accent' },
-    processing: { icon: '💸', label: `Processing ₹${policy ? Number(policy.premium) : 0} via UPI...`, color: 'text-secondary' },
-    completed: { icon: '✅', label: 'Payment Successful!', color: 'text-secondary' },
+    initiating: { icon: '🔐', label: t('payment.initiating'), color: 'text-primary' },
+    verifying: { icon: '🔍', label: t('payment.verifying'), color: 'text-accent' },
+    processing: { icon: '💸', label: t('payment.processingAmount', { amount: policy ? Number(policy.premium) : 0 }), color: 'text-secondary' },
+    completed: { icon: '✅', label: t('payment.success'), color: 'text-secondary' },
   };
 
   const navItems = [
-    { icon: Home, label: 'Home', active: true, path: '/worker' },
-    { icon: FileText, label: 'Claims', path: '/claims' },
-    { icon: Brain, label: 'Forecast', path: '/predictions' },
-    { icon: Bell, label: 'Alerts', path: '/alerts' },
-    { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Home, label: t('worker.home'), active: true, path: '/worker' },
+    { icon: FileText, label: t('worker.claims'), path: '/claims' },
+    { icon: Brain, label: t('worker.forecast'), path: '/predictions' },
+    { icon: Bell, label: t('worker.alerts'), path: '/alerts' },
+    { icon: User, label: t('worker.profile'), path: '/profile' },
   ];
 
   const daysLeft = policy ? Math.max(0, Math.ceil((new Date(policy.end_date).getTime() - Date.now()) / 86400000)) : 0;
@@ -213,7 +211,7 @@ export default function WorkerDashboard() {
             <NotificationBell />
             <LanguageToggle />
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out" className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title={t('common.signOut')} className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -223,7 +221,7 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-6 max-w-lg space-y-5">
         {/* Greeting */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-muted-foreground text-sm">Welcome back,</p>
+          <p className="text-muted-foreground text-sm">{t('worker.welcomeBack')}</p>
           <h1 className="font-display text-2xl font-bold">{worker?.name || 'Worker'} 👋</h1>
         </motion.div>
 
@@ -237,12 +235,12 @@ export default function WorkerDashboard() {
               <CardContent className="relative p-6 text-primary-foreground">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-xs text-primary-foreground/50 uppercase tracking-wider font-medium">Active Plan</p>
+                    <p className="text-xs text-primary-foreground/50 uppercase tracking-wider font-medium">{t('worker.activePlan')}</p>
                     <p className="font-display font-bold text-2xl mt-1">{policy.tier}</p>
                   </div>
                   <Badge className="bg-secondary/20 text-secondary-foreground border-0 backdrop-blur-sm">
                     <div className="w-1.5 h-1.5 rounded-full bg-safety-green mr-1.5 animate-pulse" />
-                    Active
+                    {t('worker.active')}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-primary-foreground/40 mb-4">
@@ -250,17 +248,17 @@ export default function WorkerDashboard() {
                   <span>→</span>
                   <span>{policy.end_date}</span>
                   <Badge variant="outline" className={`ml-auto border-primary-foreground/20 text-primary-foreground/70 text-[10px] ${daysLeft <= 2 ? 'border-destructive/50 text-destructive' : ''}`}>
-                    {daysLeft}d left
+                    {t('worker.daysLeft', { days: daysLeft })}
                   </Badge>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-primary-foreground/10 backdrop-blur-sm p-3 text-center border border-primary-foreground/5">
                     <p className="font-display font-bold text-xl">₹{claimedThisWeek.toLocaleString()}</p>
-                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">Claimed this week</p>
+                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">{t('worker.claimedThisWeek')}</p>
                   </div>
                   <div className="rounded-xl bg-primary-foreground/10 backdrop-blur-sm p-3 text-center border border-primary-foreground/5">
                     <p className="font-display font-bold text-xl">₹{Number(policy.max_payout).toLocaleString()}</p>
-                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">Max coverage</p>
+                    <p className="text-[10px] text-primary-foreground/50 mt-0.5">{t('worker.maxCoverage')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -273,9 +271,9 @@ export default function WorkerDashboard() {
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Shield className="w-6 h-6 text-primary" />
                 </div>
-                <p className="text-muted-foreground mb-4">No active plan yet</p>
+                <p className="text-muted-foreground mb-4">{t('worker.noPlan')}</p>
                 <Link to="/signup">
-                  <Button className="gradient-shield text-primary-foreground border-0 shadow-glow-blue">Get Protected Now</Button>
+                  <Button className="gradient-shield text-primary-foreground border-0 shadow-glow-blue">{t('worker.getProtectedNow')}</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -290,22 +288,22 @@ export default function WorkerDashboard() {
                 <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Shield className="w-3.5 h-3.5 text-primary" />
                 </div>
-                Shield Score
+                {t('worker.shieldScore')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <ShieldScoreGauge score={worker?.shield_score || 50} />
               <div className="text-right text-sm space-y-2">
                 <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">Zone</p>
+                  <p className="text-[10px] text-muted-foreground">{t('worker.zone')}</p>
                   <p className="font-medium text-xs">{zone?.name || worker?.city || 'N/A'}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">Platform</p>
+                  <p className="text-[10px] text-muted-foreground">{t('worker.platformLabel')}</p>
                   <p className="font-medium text-xs">{worker?.platform || 'N/A'}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">Weekly Earnings</p>
+                  <p className="text-[10px] text-muted-foreground">{t('worker.weeklyEarnings')}</p>
                   <p className="font-medium text-xs">₹{Number(worker?.weekly_earnings || 0).toLocaleString()}</p>
                 </div>
               </div>
@@ -335,7 +333,7 @@ export default function WorkerDashboard() {
                   🔮
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-sm text-primary">AI Prediction</p>
+                  <p className="font-display font-semibold text-sm text-primary">{t('worker.aiPrediction')}</p>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{proactiveAlert}</p>
                 </div>
               </CardContent>
@@ -356,7 +354,7 @@ export default function WorkerDashboard() {
                   {weatherAlert.icon}
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-sm">Weather Alert</p>
+                  <p className="font-display font-semibold text-sm">{t('worker.weatherAlert')}</p>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{weatherAlert.text}</p>
                 </div>
               </CardContent>
@@ -382,15 +380,15 @@ export default function WorkerDashboard() {
                   <div className="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center">
                     💸
                   </div>
-                  Payout Status
+                  {t('worker.payoutStatus')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {payouts.slice(0, 3).map((payout) => {
                   const statusConfig = {
-                    pending: { icon: '⏳', color: 'text-accent', bg: 'bg-accent/10', label: 'Processing' },
-                    completed: { icon: '✅', color: 'text-secondary', bg: 'bg-secondary/10', label: 'Sent' },
-                    failed: { icon: '❌', color: 'text-destructive', bg: 'bg-destructive/10', label: 'Failed' },
+                    pending: { icon: '⏳', color: 'text-accent', bg: 'bg-accent/10', label: t('worker.processing') },
+                    completed: { icon: '✅', color: 'text-secondary', bg: 'bg-secondary/10', label: t('worker.sent') },
+                    failed: { icon: '❌', color: 'text-destructive', bg: 'bg-destructive/10', label: t('worker.failed') },
                   };
                   const config = statusConfig[payout.status] || statusConfig.pending;
                   return (
@@ -402,7 +400,7 @@ export default function WorkerDashboard() {
                         <div>
                           <p className="text-sm font-medium">₹{Number(payout.amount).toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">
-                            {payout.upi_id ? `→ ${payout.upi_id}` : 'UPI transfer'}
+                            {payout.upi_id ? `→ ${payout.upi_id}` : t('worker.upiTransfer')}
                           </p>
                         </div>
                       </div>
@@ -419,7 +417,7 @@ export default function WorkerDashboard() {
                 })}
                 {payouts.length > 3 && (
                   <Link to="/claims" className="block text-center text-xs text-primary font-medium pt-2 hover:underline">
-                    View all {payouts.length} payouts →
+                    {t('common.viewAll')}
                   </Link>
                 )}
               </CardContent>
@@ -432,13 +430,13 @@ export default function WorkerDashboard() {
           <Card className="shadow-card border-border/50">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-display">Recent Activity</CardTitle>
-                <Link to="/claims" className="text-xs text-primary font-medium hover:underline">View all →</Link>
+                <CardTitle className="text-base font-display">{t('worker.recentActivity')}</CardTitle>
+                <Link to="/claims" className="text-xs text-primary font-medium hover:underline">{t('common.viewAll')}</Link>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {claims.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No claims yet. Stay protected! 🛡️</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{t('worker.noClaims')}</p>
               )}
               {claims.slice(0, 4).map((claim) => {
                 const trigger = triggerTypes.find(tt => tt.id === claim.trigger_type);
@@ -470,7 +468,7 @@ export default function WorkerDashboard() {
             onClick={startRenewPayment}
             disabled={renewing || !policy || renewPayStage !== 'idle'}
           >
-            {renewing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Renew ₹${policy ? Number(policy.premium) : ''}`}
+            {renewing ? <Loader2 className="w-4 h-4 animate-spin" /> : t('worker.renew', { amount: policy ? Number(policy.premium) : '' })}
           </Button>
           <Button 
             variant="outline" 
@@ -481,11 +479,11 @@ export default function WorkerDashboard() {
             }}
           >
             <Banknote className="w-4 h-4 mr-1" />
-            Demo Pay
+            {t('worker.demoPay')}
           </Button>
           <Link to="/claims">
             <Button variant="outline" className="h-12 w-full font-semibold border-border/50">
-              History
+              {t('worker.history')}
             </Button>
           </Link>
         </div>
@@ -524,16 +522,16 @@ export default function WorkerDashboard() {
                         <IndianRupee className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="text-white/70 text-xs">GigShield Policy Renewal</p>
-                        <p className="text-white font-bold text-sm">UPI • {policy.tier} Plan</p>
+                        <p className="text-white/70 text-xs">{t('worker.policyRenewal')}</p>
+                        <p className="text-white font-bold text-sm">UPI • {policy.tier} {t('common.plan')}</p>
                       </div>
                     </div>
                   </div>
                   <CardContent className="p-6 space-y-6">
                     <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-                      <p className="text-muted-foreground text-sm mb-1">Renewal Premium</p>
+                      <p className="text-muted-foreground text-sm mb-1">{t('worker.renewalPremium')}</p>
                       <span className="text-4xl font-display font-bold">₹{Number(policy.premium)}</span>
-                      <p className="text-xs text-muted-foreground mt-1">Weekly • {policy.tier} tier</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('common.weekly')} • {policy.tier}</p>
                     </motion.div>
 
                     <div className="flex items-center justify-center gap-3 py-3">
@@ -541,7 +539,7 @@ export default function WorkerDashboard() {
                         <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
                           <Smartphone className="w-5 h-5 text-secondary" />
                         </div>
-                        <span className="text-[10px] text-muted-foreground">Your UPI</span>
+                        <span className="text-[10px] text-muted-foreground">{t('payment.yourUpi')}</span>
                       </div>
                       <div className="flex-1 flex items-center justify-center relative">
                         <div className="h-0.5 w-full bg-border absolute" />
@@ -558,7 +556,7 @@ export default function WorkerDashboard() {
                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="text-lg">🛡️</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">GigShield</span>
+                        <span className="text-[10px] text-muted-foreground">{t('payment.gigshield')}</span>
                       </div>
                     </div>
 
@@ -583,26 +581,26 @@ export default function WorkerDashboard() {
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
                           <div className="p-4 rounded-xl bg-secondary/5 border border-secondary/20 space-y-2">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Plan</span>
+                              <span className="text-muted-foreground">{t('common.plan')}</span>
                               <span className="font-medium">{policy.tier}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Amount</span>
-                              <span className="font-medium">₹{Number(policy.premium)}/week</span>
+                              <span className="text-muted-foreground">{t('common.amount')}</span>
+                              <span className="font-medium">₹{Number(policy.premium)}/{t('common.weekly').toLowerCase()}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Transaction ID</span>
+                              <span className="text-muted-foreground">{t('common.transactionId')}</span>
                               <span className="font-medium font-mono text-xs">{renewTxnId}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm pt-2 border-t border-secondary/20">
-                              <span className="text-muted-foreground">Status</span>
-                              <Badge className="bg-secondary/10 text-secondary border-0"><CheckCircle2 className="w-3 h-3 mr-1" /> Paid</Badge>
+                              <span className="text-muted-foreground">{t('common.status')}</span>
+                              <Badge className="bg-secondary/10 text-secondary border-0"><CheckCircle2 className="w-3 h-3 mr-1" /> {t('common.paid')}</Badge>
                             </div>
                           </div>
                           <Button onClick={handleRenewAfterPay} className="w-full gradient-shield text-primary-foreground border-0">
-                            🛡️ Activate Renewal
+                            {t('worker.activateRenewal')}
                           </Button>
-                          <p className="text-center text-[10px] text-muted-foreground">Simulated payment • Demo mode</p>
+                          <p className="text-center text-[10px] text-muted-foreground">{t('common.noRealCharge')}</p>
                         </motion.div>
                       )}
                     </AnimatePresence>

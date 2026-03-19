@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { sendMockWhatsAppPayout } from '@/lib/whatsapp-mock';
+import { useTranslation } from 'react-i18next';
 
 interface PayoutSimulatorProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface PayoutSimulatorProps {
 type PayoutStage = 'initiating' | 'verifying' | 'processing' | 'completed';
 
 export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, workerName }: PayoutSimulatorProps) {
+  const { t } = useTranslation();
   const [stage, setStage] = useState<PayoutStage>('initiating');
   const [transactionId, setTransactionId] = useState('');
 
@@ -27,10 +29,8 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
       return;
     }
 
-    // Generate mock transaction ID
     setTransactionId(`GS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`);
 
-    // Simulate payout stages
     const timers = [
       setTimeout(() => setStage('verifying'), 1200),
       setTimeout(() => setStage('processing'), 2400),
@@ -44,10 +44,10 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
   }, [isOpen]);
 
   const stageConfig = {
-    initiating: { icon: '🔐', label: 'Initiating secure transfer...', color: 'text-primary' },
-    verifying: { icon: '🔍', label: 'Verifying claim & fraud check...', color: 'text-accent' },
-    processing: { icon: '💸', label: 'Processing UPI transfer...', color: 'text-secondary' },
-    completed: { icon: '✅', label: 'Payout Successful!', color: 'text-secondary' },
+    initiating: { icon: '🔐', label: t('payoutSim.initiating'), color: 'text-primary' },
+    verifying: { icon: '🔍', label: t('payoutSim.verifying'), color: 'text-accent' },
+    processing: { icon: '💸', label: t('payoutSim.processing'), color: 'text-secondary' },
+    completed: { icon: '✅', label: t('payoutSim.success'), color: 'text-secondary' },
   };
 
   const currentConfig = stageConfig[stage];
@@ -69,7 +69,7 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
             className="w-full max-w-sm"
           >
             <Card className="border-0 shadow-elevated overflow-hidden">
-              {/* Header - Razorpay-style */}
+              {/* Header */}
               <div className="bg-gradient-to-r from-primary to-primary/80 p-4 relative overflow-hidden">
                 <div className="absolute inset-0 pattern-grid opacity-10" />
                 <div className="relative flex items-center justify-between">
@@ -78,8 +78,8 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
                       <IndianRupee className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/70 text-xs">GigShield Instant Payout</p>
-                      <p className="text-white font-bold text-sm">UPI Transfer</p>
+                      <p className="text-white/70 text-xs">{t('payoutSim.instantPayout')}</p>
+                      <p className="text-white font-bold text-sm">{t('payoutSim.upiTransfer')}</p>
                     </div>
                   </div>
                   {stage === 'completed' && (
@@ -102,7 +102,7 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
                   animate={{ scale: 1 }}
                   className="text-center"
                 >
-                  <p className="text-muted-foreground text-sm mb-1">Payout Amount</p>
+                  <p className="text-muted-foreground text-sm mb-1">{t('payoutSim.payoutAmount')}</p>
                   <div className="flex items-center justify-center gap-1">
                     <span className="text-4xl font-display font-bold">₹{amount.toLocaleString()}</span>
                   </div>
@@ -195,26 +195,26 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
                     >
                       <div className="p-4 rounded-xl bg-secondary/5 border border-secondary/20 space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Recipient</span>
+                          <span className="text-muted-foreground">{t('common.recipient')}</span>
                           <span className="font-medium">{workerName}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">UPI ID</span>
+                          <span className="text-muted-foreground">{t('payoutSim.upiId')}</span>
                           <span className="font-medium font-mono text-xs">{upiId}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Transaction ID</span>
+                          <span className="text-muted-foreground">{t('common.transactionId')}</span>
                           <span className="font-medium font-mono text-xs">{transactionId}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Time</span>
+                          <span className="text-muted-foreground">{t('common.time')}</span>
                           <span className="font-medium text-xs">{new Date().toLocaleTimeString()}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm pt-2 border-t border-secondary/20">
-                          <span className="text-muted-foreground">Status</span>
+                          <span className="text-muted-foreground">{t('common.status')}</span>
                           <Badge className="bg-secondary/10 text-secondary border-0">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Credited
+                            {t('common.credited')}
                           </Badge>
                         </div>
                       </div>
@@ -223,11 +223,11 @@ export function PayoutSimulator({ isOpen, onClose, amount, upiId, claimType, wor
                         onClick={onClose}
                         className="w-full gradient-shield text-primary-foreground border-0"
                       >
-                        Done
+                        {t('common.done')}
                       </Button>
 
                       <p className="text-center text-[10px] text-muted-foreground">
-                        Simulated payment • Powered by GigShield + Razorpay Test Mode
+                        {t('payoutSim.simulatedPayment')}
                       </p>
                     </motion.div>
                   )}

@@ -19,6 +19,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface DailyRisk {
   day: string;
@@ -63,6 +64,7 @@ function getThreatIcon(threat: string) {
 }
 
 export default function PredictionsPage() {
+  const { t } = useTranslation();
   const [forecasts, setForecasts] = useState<ZoneForecast[]>([]);
   const [platformSummary, setPlatformSummary] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,6 @@ export default function PredictionsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Fetch worker's city and zone
       let city: string | null = null;
       if (user) {
         const { data: worker } = await supabase
@@ -91,7 +92,6 @@ export default function PredictionsPage() {
         }
       }
 
-      // Pass worker's city so AI only analyzes their region
       const { data, error } = await supabase.functions.invoke('ai-predict', {
         body: { type: 'zone_detailed_forecast', data: { city } },
       });
@@ -107,7 +107,7 @@ export default function PredictionsPage() {
       setLastUpdated(new Date());
     } catch (e) {
       console.error('Forecast error:', e);
-      toast.error('Failed to load predictions');
+      toast.error(t('predictions.loadFailed', { defaultValue: 'Failed to load predictions' }));
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,6 @@ export default function PredictionsPage() {
     fetchForecasts();
   }, []);
 
-  // Sort: worker's exact zone first, then by risk score
   const myZoneForecasts = [...forecasts].sort((a, b) => {
     if (workerZoneId && a.zone_id === workerZoneId) return -1;
     if (workerZoneId && b.zone_id === workerZoneId) return 1;
@@ -136,7 +135,7 @@ export default function PredictionsPage() {
             <Link to="/worker"><ArrowLeft className="w-5 h-5 text-muted-foreground" /></Link>
             <div className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-primary" />
-              <h1 className="font-display font-bold">AI Risk Forecast</h1>
+              <h1 className="font-display font-bold">{t('predictions.title')}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -156,9 +155,9 @@ export default function PredictionsPage() {
                 <div>
                   <CardTitle className="font-display text-lg flex items-center gap-2">
                     <Brain className="w-5 h-5 text-primary" />
-                    7-Day Risk Forecast {workerCity && <Badge variant="outline" className="ml-1 text-xs">{workerCity}</Badge>}
+                    {t('predictions.sevenDay')} {workerCity && <Badge variant="outline" className="ml-1 text-xs">{workerCity}</Badge>}
                   </CardTitle>
-                  <CardDescription>AI-powered weather disruption forecasts for your zone</CardDescription>
+                  <CardDescription>{t('predictions.subtitle')}</CardDescription>
                 </div>
                 <Button
                   size="sm"
@@ -168,7 +167,7 @@ export default function PredictionsPage() {
                   className="shrink-0"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  <span className="ml-1 hidden sm:inline">Refresh</span>
+                  <span className="ml-1 hidden sm:inline">{t('common.refresh')}</span>
                 </Button>
               </div>
             </CardHeader>
@@ -176,37 +175,37 @@ export default function PredictionsPage() {
               {loading ? (
                 <div className="flex items-center gap-3 py-4">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground animate-pulse">🤖 AI analyzing weather patterns, historical incidents, and seasonal data...</p>
+                  <p className="text-sm text-muted-foreground animate-pulse">{t('predictions.aiAnalyzing')}</p>
                 </div>
               ) : (
                 <>
                   {/* KPI Row */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="p-3 rounded-lg bg-muted/50 text-center">
-                     <p className="font-display font-bold text-xl">{myZoneForecasts.length}</p>
-                      <p className="text-[10px] text-muted-foreground">Your Zones</p>
+                      <p className="font-display font-bold text-xl">{myZoneForecasts.length}</p>
+                      <p className="text-[10px] text-muted-foreground">{t('predictions.yourZones')}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-destructive/5 text-center">
                       <p className="font-display font-bold text-xl text-destructive">{highRiskCount}</p>
-                      <p className="text-[10px] text-muted-foreground">Disruptions</p>
+                      <p className="text-[10px] text-muted-foreground">{t('predictions.disruptions')}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/5 text-center">
                       <p className="font-display font-bold text-xl text-accent">₹{totalEstClaims.toLocaleString('en-IN')}</p>
-                      <p className="text-[10px] text-muted-foreground">Est. Claims</p>
+                      <p className="text-[10px] text-muted-foreground">{t('predictions.estClaims')}</p>
                     </div>
                   </div>
 
                   {/* City Summary */}
                   {platformSummary && (
                     <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 mb-4">
-                      <p className="text-xs font-medium text-primary mb-1">🤖 AI {workerCity || 'City'} Assessment</p>
+                      <p className="text-xs font-medium text-primary mb-1">{t('predictions.aiAssessment', { city: workerCity || 'City' })}</p>
                       <p className="text-sm text-foreground/80">{platformSummary}</p>
                     </div>
                   )}
 
                   {lastUpdated && (
                     <p className="text-[10px] text-muted-foreground">
-                      Last updated: {lastUpdated.toLocaleTimeString()}
+                      {t('predictions.lastUpdated', { time: lastUpdated.toLocaleTimeString() })}
                     </p>
                   )}
                 </>
@@ -220,7 +219,7 @@ export default function PredictionsPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="shadow-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-display">Disruption Comparison</CardTitle>
+                <CardTitle className="text-sm font-display">{t('predictions.comparisonChart')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={Math.max(120, myZoneForecasts.length * 40)}>
@@ -263,7 +262,7 @@ export default function PredictionsPage() {
         {/* Your City Zone Forecast Cards */}
         {myZoneForecasts.length > 0 && workerCity && (
           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> Your city: {workerCity}
+            <MapPin className="w-3 h-3" /> {t('predictions.yourCity', { city: workerCity })}
           </p>
         )}
         <div className="space-y-3">
@@ -318,7 +317,7 @@ export default function PredictionsPage() {
                       <span>🎯 {forecast.primary_threat}</span>
                       {forecast.peak_risk_day && (
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />Peak: {forecast.peak_risk_day}
+                          <Calendar className="w-3 h-3" />{t('predictions.peakDay')}: {forecast.peak_risk_day}
                         </span>
                       )}
                       {forecast.has_gps_workers !== false && forecast.estimated_claims_inr != null && (
@@ -335,14 +334,14 @@ export default function PredictionsPage() {
                       >
                         {/* AI Summary */}
                         <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                          <p className="text-xs font-medium text-primary mb-1">🤖 AI Analysis</p>
+                          <p className="text-xs font-medium text-primary mb-1">{t('predictions.aiAnalysis')}</p>
                           <p className="text-sm">{forecast.ai_summary}</p>
                         </div>
 
                         {/* Daily Risk Chart */}
                         {forecast.daily_risk?.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-2">7-Day Risk Trend</p>
+                            <p className="text-xs font-medium text-muted-foreground mb-2">{t('predictions.sevenDayTrend')}</p>
                             <ResponsiveContainer width="100%" height={120}>
                               <AreaChart data={forecast.daily_risk}>
                                 <defs>
@@ -382,13 +381,13 @@ export default function PredictionsPage() {
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {forecast.secondary_threat && (
                             <div className="p-2 rounded-lg bg-muted/50">
-                              <p className="text-muted-foreground">Secondary Threat</p>
+                              <p className="text-muted-foreground">{t('predictions.secondaryThreat')}</p>
                               <p className="font-medium">{getThreatIcon(forecast.secondary_threat)} {forecast.secondary_threat}</p>
                             </div>
                           )}
                           {forecast.estimated_affected_workers && (
                             <div className="p-2 rounded-lg bg-muted/50">
-                              <p className="text-muted-foreground">Est. Affected Workers</p>
+                              <p className="text-muted-foreground">{t('predictions.affectedWorkers')}</p>
                               <p className="font-medium flex items-center gap-1">
                                 <Users className="w-3 h-3" />{forecast.estimated_affected_workers}
                               </p>
@@ -404,13 +403,11 @@ export default function PredictionsPage() {
           })}
         </div>
 
-
-
         {!loading && forecasts.length === 0 && (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center text-muted-foreground">
               <Brain className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No forecast data available. Add zones to start getting predictions.</p>
+              <p>{t('predictions.noForecast')}</p>
             </CardContent>
           </Card>
         )}
