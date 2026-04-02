@@ -36,7 +36,13 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
     if (!selectedTrigger) return;
     setSubmitting(true); setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('worker-report', { body: { action: 'report_disruption', trigger_type: selectedTrigger } });
+      // Collect device fingerprint for anti-spoofing
+      let deviceFp;
+      try { deviceFp = await collectDeviceFingerprint(); } catch { /* best effort */ }
+      
+      const { data, error } = await supabase.functions.invoke('worker-report', { 
+        body: { action: 'report_disruption', trigger_type: selectedTrigger, device_fingerprint: deviceFp } 
+      });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Report failed');
       setResult({ message: data.message, status: data.claim?.status || 'processing' });
