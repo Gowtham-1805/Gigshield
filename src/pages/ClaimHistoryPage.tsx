@@ -88,6 +88,7 @@ export default function ClaimHistoryPage() {
             <TabsTrigger value="all" className="flex-1">{t('claims.all')}</TabsTrigger>
             <TabsTrigger value="approved" className="flex-1">{t('claims.approved')}</TabsTrigger>
             <TabsTrigger value="processing" className="flex-1">{t('claims.processing')}</TabsTrigger>
+            <TabsTrigger value="soft_hold" className="flex-1">⏳ Hold</TabsTrigger>
             <TabsTrigger value="flagged" className="flex-1">{t('claims.flagged')}</TabsTrigger>
           </TabsList>
         </Tabs>
