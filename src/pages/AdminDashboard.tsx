@@ -31,6 +31,7 @@ const sidebarItems = [
   { icon: FileText, label: 'Claims', id: 'claims' },
   { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
   { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
+  { icon: Fingerprint, label: 'Anti-Spoof', id: 'antispoof' },
   { icon: Brain, label: 'Predictions', id: 'predictions' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
