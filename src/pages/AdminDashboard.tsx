@@ -19,6 +19,7 @@ import FraudNetworkGraph from '@/components/admin/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/admin/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/admin/CohortAnalyticsTab';
 import TransparencyLedger from '@/components/admin/TransparencyLedger';
+import AntiSpoofDashboard from '@/components/admin/AntiSpoofDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useNavigate } from 'react-router-dom';
