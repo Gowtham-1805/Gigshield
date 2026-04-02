@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, CloudRain, Flame, Wind, Ban, CloudLightning, Send, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CloudRain, Flame, Wind, Ban, CloudLightning, Send, Loader2, FileText, CheckCircle2, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendMockWhatsAppClaimCreated } from '@/lib/whatsapp-mock';
 import { useTranslation } from 'react-i18next';
+import { collectDeviceFingerprint } from '@/lib/device-fingerprint';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface WorkerReportPanelProps {
