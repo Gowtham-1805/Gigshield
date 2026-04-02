@@ -128,10 +128,22 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
       <AnimatePresence>
         {result && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <Card className={`shadow-card border-0 ${result.status === 'approved' ? 'bg-secondary/10 border-secondary/20' : result.status === 'flagged' ? 'bg-destructive/10 border-destructive/20' : 'bg-accent/10 border-accent/20'}`}>
+            <Card className={`shadow-card border-0 ${result.status === 'approved' ? 'bg-secondary/10 border-secondary/20' : result.status === 'flagged' ? 'bg-destructive/10 border-destructive/20' : result.status === 'soft_hold' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-accent/10 border-accent/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <CheckCircle2 className={`w-5 h-5 shrink-0 ${result.status === 'approved' ? 'text-secondary' : result.status === 'flagged' ? 'text-destructive' : 'text-accent'}`} />
-                <p className="text-sm font-medium">{result.message}</p>
+                {result.status === 'soft_hold' ? (
+                  <>
+                    <Clock className="w-5 h-5 shrink-0 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium">{result.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your claim is under soft-hold verification. You won't lose your payout — we're just verifying additional signals.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${result.status === 'approved' ? 'text-secondary' : result.status === 'flagged' ? 'text-destructive' : 'text-accent'}`} />
+                    <p className="text-sm font-medium">{result.message}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
