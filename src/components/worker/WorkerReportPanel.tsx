@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, CloudRain, Flame, Wind, Ban, CloudLightning, Send, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CloudRain, Flame, Wind, Ban, CloudLightning, Send, Loader2, FileText, CheckCircle2, Fingerprint, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendMockWhatsAppClaimCreated } from '@/lib/whatsapp-mock';
 import { useTranslation } from 'react-i18next';
+import { collectDeviceFingerprint } from '@/lib/device-fingerprint';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface WorkerReportPanelProps {
@@ -35,7 +36,13 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
     if (!selectedTrigger) return;
     setSubmitting(true); setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('worker-report', { body: { action: 'report_disruption', trigger_type: selectedTrigger } });
+      // Collect device fingerprint for anti-spoofing
+      let deviceFp;
+      try { deviceFp = await collectDeviceFingerprint(); } catch { /* best effort */ }
+      
+      const { data, error } = await supabase.functions.invoke('worker-report', { 
+        body: { action: 'report_disruption', trigger_type: selectedTrigger, device_fingerprint: deviceFp } 
+      });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Report failed');
       setResult({ message: data.message, status: data.claim?.status || 'processing' });
@@ -49,7 +56,12 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
   const fileClaim = async (incidentId: string) => {
     setSubmitting(true); setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('worker-report', { body: { action: 'file_claim', incident_id: incidentId } });
+      let deviceFp;
+      try { deviceFp = await collectDeviceFingerprint(); } catch { /* best effort */ }
+      
+      const { data, error } = await supabase.functions.invoke('worker-report', { 
+        body: { action: 'file_claim', incident_id: incidentId, device_fingerprint: deviceFp } 
+      });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Claim failed');
       setResult({ message: data.message, status: data.claim?.status || 'approved' });
@@ -116,10 +128,22 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
       <AnimatePresence>
         {result && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <Card className={`shadow-card border-0 ${result.status === 'approved' ? 'bg-secondary/10 border-secondary/20' : result.status === 'flagged' ? 'bg-destructive/10 border-destructive/20' : 'bg-accent/10 border-accent/20'}`}>
+            <Card className={`shadow-card border-0 ${result.status === 'approved' ? 'bg-secondary/10 border-secondary/20' : result.status === 'flagged' ? 'bg-destructive/10 border-destructive/20' : result.status === 'soft_hold' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-accent/10 border-accent/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <CheckCircle2 className={`w-5 h-5 shrink-0 ${result.status === 'approved' ? 'text-secondary' : result.status === 'flagged' ? 'text-destructive' : 'text-accent'}`} />
-                <p className="text-sm font-medium">{result.message}</p>
+                {result.status === 'soft_hold' ? (
+                  <>
+                    <Clock className="w-5 h-5 shrink-0 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium">{result.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your claim is under soft-hold verification. You won't lose your payout — we're just verifying additional signals.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${result.status === 'approved' ? 'text-secondary' : result.status === 'flagged' ? 'text-destructive' : 'text-accent'}`} />
+                    <p className="text-sm font-medium">{result.message}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>

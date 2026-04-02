@@ -112,6 +112,125 @@ export type Database = {
           },
         ]
       }
+      device_fingerprints: {
+        Row: {
+          canvas_hash: string | null
+          cell_tower_id: string | null
+          created_at: string
+          device_hash: string
+          has_accelerometer: boolean | null
+          has_touch: boolean | null
+          id: string
+          ip_address: string | null
+          language: string | null
+          platform: string | null
+          screen_resolution: string | null
+          signals: Json | null
+          timezone: string | null
+          user_agent: string | null
+          wifi_bssid: string | null
+          worker_id: string
+        }
+        Insert: {
+          canvas_hash?: string | null
+          cell_tower_id?: string | null
+          created_at?: string
+          device_hash: string
+          has_accelerometer?: boolean | null
+          has_touch?: boolean | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          platform?: string | null
+          screen_resolution?: string | null
+          signals?: Json | null
+          timezone?: string | null
+          user_agent?: string | null
+          wifi_bssid?: string | null
+          worker_id: string
+        }
+        Update: {
+          canvas_hash?: string | null
+          cell_tower_id?: string | null
+          created_at?: string
+          device_hash?: string
+          has_accelerometer?: boolean | null
+          has_touch?: boolean | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          platform?: string | null
+          screen_resolution?: string | null
+          signals?: Json | null
+          timezone?: string | null
+          user_agent?: string | null
+          wifi_bssid?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_fingerprints_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_signals: {
+        Row: {
+          claim_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          resolved: boolean | null
+          resolved_at: string | null
+          score: number
+          severity: string
+          signal_type: string
+          worker_id: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          score?: number
+          severity?: string
+          signal_type: string
+          worker_id: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          score?: number
+          severity?: string
+          signal_type?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_signals_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_signals_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           created_at: string
@@ -261,6 +380,78 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "policies_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spoofing_analysis: {
+        Row: {
+          analysis_details: Json | null
+          behavioral_score: number | null
+          claim_id: string
+          created_at: string
+          device_integrity_score: number | null
+          gps_confidence: number | null
+          id: string
+          network_ring_flag: boolean | null
+          overall_spoof_probability: number | null
+          soft_hold_expires_at: string | null
+          temporal_cluster_flag: boolean | null
+          triangulation_score: number | null
+          trust_tier: string
+          updated_at: string
+          verification_status: string
+          worker_id: string
+        }
+        Insert: {
+          analysis_details?: Json | null
+          behavioral_score?: number | null
+          claim_id: string
+          created_at?: string
+          device_integrity_score?: number | null
+          gps_confidence?: number | null
+          id?: string
+          network_ring_flag?: boolean | null
+          overall_spoof_probability?: number | null
+          soft_hold_expires_at?: string | null
+          temporal_cluster_flag?: boolean | null
+          triangulation_score?: number | null
+          trust_tier?: string
+          updated_at?: string
+          verification_status?: string
+          worker_id: string
+        }
+        Update: {
+          analysis_details?: Json | null
+          behavioral_score?: number | null
+          claim_id?: string
+          created_at?: string
+          device_integrity_score?: number | null
+          gps_confidence?: number | null
+          id?: string
+          network_ring_flag?: boolean | null
+          overall_spoof_probability?: number | null
+          soft_hold_expires_at?: string | null
+          temporal_cluster_flag?: boolean | null
+          triangulation_score?: number | null
+          trust_tier?: string
+          updated_at?: string
+          verification_status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spoofing_analysis_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spoofing_analysis_worker_id_fkey"
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "workers"
@@ -437,7 +628,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      claim_status: "approved" | "processing" | "flagged" | "rejected"
+      claim_status:
+        | "approved"
+        | "processing"
+        | "flagged"
+        | "rejected"
+        | "soft_hold"
       notification_type: "weather" | "claim" | "payout"
       payout_status: "pending" | "completed" | "failed"
       policy_status: "active" | "expired" | "cancelled"
@@ -577,7 +773,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      claim_status: ["approved", "processing", "flagged", "rejected"],
+      claim_status: [
+        "approved",
+        "processing",
+        "flagged",
+        "rejected",
+        "soft_hold",
+      ],
       notification_type: ["weather", "claim", "payout"],
       payout_status: ["pending", "completed", "failed"],
       policy_status: ["active", "expired", "cancelled"],

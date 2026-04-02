@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, LayoutDashboard, FileText, AlertTriangle, Map, TrendingUp,
-  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon
+  DollarSign, Zap, ChevronLeft, ChevronRight, Bell, User, Menu, LogOut, Eye, Users, MessageSquarePlus, Image, Loader2, Brain, PieChart as PieChartIcon, Fingerprint
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import FraudNetworkGraph from '@/components/admin/FraudNetworkGraph';
 import DemoTriggerPanel from '@/components/admin/DemoTriggerPanel';
 import CohortAnalyticsTab from '@/components/admin/CohortAnalyticsTab';
 import TransparencyLedger from '@/components/admin/TransparencyLedger';
+import AntiSpoofDashboard from '@/components/admin/AntiSpoofDashboard';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ const sidebarItems = [
   { icon: FileText, label: 'Claims', id: 'claims' },
   { icon: MessageSquarePlus, label: 'Appeals', id: 'appeals' },
   { icon: AlertTriangle, label: 'Fraud', id: 'fraud' },
+  { icon: Fingerprint, label: 'Anti-Spoof', id: 'antispoof' },
   { icon: Brain, label: 'Predictions', id: 'predictions' },
   { icon: Map, label: 'Zone Map', id: 'map' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
@@ -139,6 +141,7 @@ export default function AdminDashboard() {
               {activeTab === 'claims' && <ClaimsTab />}
               {activeTab === 'appeals' && <AppealsTab />}
               {activeTab === 'fraud' && <FraudTab />}
+              {activeTab === 'antispoof' && <AntiSpoofDashboard />}
               {activeTab === 'predictions' && <PredictionsTab />}
               {activeTab === 'map' && <AdminZoneMap />}
               {activeTab === 'analytics' && <AnalyticsTab />}
