@@ -56,7 +56,12 @@ export default function WorkerReportPanel({ recentIncidents, hasActivePolicy, on
   const fileClaim = async (incidentId: string) => {
     setSubmitting(true); setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('worker-report', { body: { action: 'file_claim', incident_id: incidentId } });
+      let deviceFp;
+      try { deviceFp = await collectDeviceFingerprint(); } catch { /* best effort */ }
+      
+      const { data, error } = await supabase.functions.invoke('worker-report', { 
+        body: { action: 'file_claim', incident_id: incidentId, device_fingerprint: deviceFp } 
+      });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Claim failed');
       setResult({ message: data.message, status: data.claim?.status || 'approved' });
