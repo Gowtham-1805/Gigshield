@@ -241,6 +241,15 @@ serve(async (req) => {
       .single();
     if (claimErr) throw claimErr;
 
+    // Run anti-spoofing analysis asynchronously
+    const { device_fingerprint } = await req.json().catch(() => ({}));
+    const antiSpoofUrl = `${supabaseUrl}/functions/v1/anti-spoof`;
+    fetch(antiSpoofUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ claim_id: claim.id, worker_id: worker.id, device_fingerprint }),
+    }).catch(e => console.error("anti-spoof fire-and-forget error:", e));
+
     // Auto-payout for approved claims
     let payout = null;
     if (status === "approved") {
