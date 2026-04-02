@@ -18,8 +18,9 @@ const statusColors: Record<string, string> = {
   processing: 'bg-accent/10 text-accent border-accent/20',
   flagged: 'bg-destructive/10 text-destructive border-destructive/20',
   rejected: 'bg-destructive/10 text-destructive border-destructive/20',
+  soft_hold: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
 };
-const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌' };
+const statusIcons: Record<string, string> = { approved: '✅', processing: '🔄', flagged: '🚩', rejected: '❌', soft_hold: '⏳' };
 
 export default function ClaimHistoryPage() {
   const { t } = useTranslation();
