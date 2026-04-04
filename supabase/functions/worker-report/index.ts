@@ -42,7 +42,8 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { action, trigger_type, incident_id, lat, lng } = await req.json();
+    const body = await req.json();
+    const { action, trigger_type, incident_id, lat, lng, device_fingerprint } = body;
 
     // Get worker
     const { data: worker, error: workerErr } = await supabase
