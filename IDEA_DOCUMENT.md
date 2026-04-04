@@ -768,9 +768,9 @@ Spoofing *all four simultaneously* requires physical relocation — which defeat
 
 ---
 
-### Layer 2: Behavioral Intelligence (AI/ML Pattern Analysis)
+### Layer 2: Behavioral Intelligence (AI/ML Pattern Analysis) — Implemented
 
-Even if a sophisticated attacker bypasses signal triangulation, their **behavior** will differ from genuine workers. GigShield's AI models analyze temporal and behavioral patterns:
+Even if a sophisticated attacker bypasses signal triangulation, their **behavior** will differ from genuine workers. The `anti-spoof` Edge Function analyzes temporal and behavioral patterns in real time:
 
 #### A. Individual Anomaly Detection
 
