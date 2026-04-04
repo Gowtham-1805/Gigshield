@@ -42,7 +42,8 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { action, trigger_type, incident_id, lat, lng } = await req.json();
+    const body = await req.json();
+    const { action, trigger_type, incident_id, lat, lng, device_fingerprint } = body;
 
     // Get worker
     const { data: worker, error: workerErr } = await supabase
@@ -241,13 +242,15 @@ serve(async (req) => {
       .single();
     if (claimErr) throw claimErr;
 
-    // Run anti-spoofing analysis asynchronously
-    const { device_fingerprint } = await req.json().catch(() => ({}));
+    // Run anti-spoofing analysis (fire-and-forget, but log errors)
     const antiSpoofUrl = `${supabaseUrl}/functions/v1/anti-spoof`;
     fetch(antiSpoofUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
       body: JSON.stringify({ claim_id: claim.id, worker_id: worker.id, device_fingerprint }),
+    }).then(async (r) => {
+      if (!r.ok) console.error("anti-spoof error:", r.status, await r.text());
+      else console.log("anti-spoof completed for claim:", claim.id);
     }).catch(e => console.error("anti-spoof fire-and-forget error:", e));
 
     // Auto-payout for approved claims
