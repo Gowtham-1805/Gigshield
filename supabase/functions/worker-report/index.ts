@@ -243,7 +243,7 @@ serve(async (req) => {
     if (claimErr) throw claimErr;
 
     // Run anti-spoofing analysis asynchronously
-    const { device_fingerprint } = await req.json().catch(() => ({}));
+    const antiSpoofUrl = `${supabaseUrl}/functions/v1/anti-spoof`;
     const antiSpoofUrl = `${supabaseUrl}/functions/v1/anti-spoof`;
     fetch(antiSpoofUrl, {
       method: "POST",
