@@ -911,16 +911,16 @@ GigShield **never instantly rejects** a flagged claim. The `anti-spoof` Edge Fun
 └────────────────────────────────────────────────────────┘
 ```
 
-#### Shield Score-Based Trust Tiers
+#### Shield Score-Based Trust Tiers (Implemented in `getTrustTier()`)
 
-Workers with established trust histories get preferential treatment during verification:
+Workers with established trust histories get preferential treatment. The `getTrustTier()` function in the Edge Function maps Shield Scores to tiers with specific soft-hold durations and auto-approve thresholds:
 
-| Shield Score | Trust Level | Verification Standard | Fraud Threshold |
-|-------------|------------|----------------------|----------------|
-| 80-100 | **Platinum** | GPS-only sufficient; auto-approve unless 2+ red flags | 0.8 |
-| 60-79 | **Gold** | GPS + one corroborating signal | 0.6 |
-| 40-59 | **Silver** | GPS + two corroborating signals | 0.5 |
-| 0-39 | **Bronze** | Full multi-signal verification required | 0.3 |
+| Shield Score | Trust Tier | Soft Hold Duration | Auto-Approve Threshold |
+|-------------|------------|-------------------|----------------------|
+| 85-100 | **Platinum** | 0 hours (instant) | spoof probability > 0.7 to flag | 
+| 70-84 | **Gold** | 2 hours | spoof probability > 0.5 to flag |
+| 50-69 | **Standard** | 6 hours | spoof probability > 0.3 to flag |
+| 0-49 | **Probation** | 24 hours | spoof probability > 0.15 to flag |
 
 **Key UX decisions:**
 - **New workers start at Silver (50)** — not punished for being new, but not fully trusted either
