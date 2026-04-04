@@ -812,12 +812,12 @@ Claims │        █
        50+ claims arrive within 5-minute window — statistically impossible
 ```
 
-**Detection Algorithm:**
-1. For each zone-incident, compute the **claim arrival rate** (claims per minute)
-2. Compare against historical baseline for that zone and trigger type
-3. If arrival rate exceeds 3σ (standard deviations) from the mean → **SYNDICATE ALERT**
+**Detection Algorithm (Implemented in `anti-spoof` Edge Function):**
+1. Query all claims in the same zone within a **30-minute window** — if ≥10 arrive, flag as `temporal_cluster` (high severity)
+2. Query all claims in a **2-hour window** and compute inter-arrival intervals
+3. Calculate the **coefficient of variation (CV)** of intervals — if CV < 0.15 with mean interval < 60s, flag as `uniform_timing` (critical severity, score 0.85) indicating bot-like synchronized filing
 4. All claims in the anomalous window are flagged for enhanced verification
-5. Workers in the cluster are cross-referenced for shared attributes (see Layer 3)
+5. Workers in the cluster are cross-referenced for shared device hashes (see Layer 3)
 
 ---
 
