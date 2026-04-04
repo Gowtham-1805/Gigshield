@@ -724,7 +724,7 @@ Traditional GPS-based verification has a fatal flaw: **GPS coordinates are trivi
 
 ### Layer 1: Multi-Signal Location Triangulation (Differentiating Genuine vs. Spoofed)
 
-GPS is treated as **one input among many** — never the sole source of truth. The system cross-references multiple independent signals that are significantly harder to spoof simultaneously:
+GPS is treated as **one input among many** — never the sole source of truth. The `anti-spoof` Edge Function (`supabase/functions/anti-spoof/index.ts`) cross-references multiple independent signals that are significantly harder to spoof simultaneously:
 
 | Signal | What It Proves | Spoofing Difficulty |
 |--------|---------------|-------------------|
