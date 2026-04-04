@@ -760,10 +760,11 @@ THEN → Location Confidence = LOW (0.2) → FLAG for review
 
 Spoofing *all four simultaneously* requires physical relocation — which defeats the purpose of the fraud.
 
-**Device Integrity Checks:**
-- **Android Play Integrity API** (formerly SafetyNet): Detects if the device is rooted, has mock location apps installed, or is running in an emulator
-- **Mock Location Detection:** Android's `Settings.Secure.ALLOW_MOCK_LOCATION` flag and `Location.isFromMockProvider()` are checked client-side
-- **App Tampering Detection:** Signature verification ensures the GigShield app hasn't been modified to bypass location checks
+**Device Integrity Checks (Implemented):**
+- **Mock Location Detection:** The client-side fingerprint library (`src/lib/device-fingerprint.ts`) collects `mock_location_enabled`, accelerometer variance, GPU renderer, and connection type. The Edge Function flags `mock_location_enabled = true` as a **critical** fraud signal (score 0.95).
+- **Shared Device Detection:** Device hashes are stored in the `device_fingerprints` table. If the same `device_hash` appears under multiple `worker_id`s, a **high-severity shared_device** signal is raised.
+- **Accelerometer Analysis:** Near-zero accelerometer variance (< 0.01) flags the device as stationary — inconsistent with outdoor delivery work.
+- **Timezone Cross-Check:** The reported device timezone is compared against the expected timezone for the worker's GPS coordinates; mismatches produce a **medium-severity** signal.
 
 ---
 
