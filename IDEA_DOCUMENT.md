@@ -973,6 +973,8 @@ This is the hardest edge case: a worker is genuinely stranded in a flooded zone,
 
 **The key architectural principle:** No single signal is trusted alone. The system requires **convergence across independent channels** — GPS, network infrastructure, device sensors, behavioral history, and temporal patterns must all tell a consistent story. Spoofing one is easy. Spoofing all five simultaneously is practically impossible without physically being in the claimed location — which, of course, would make the claim genuine.
 
+> **🔒 This entire defense system is not theoretical — it is deployed and operational.** The weighted composite scoring formula (`gps: 0.25, triangulation: 0.2, device: 0.2, behavioral: 0.15, temporal: 0.1, network: 0.1`) runs in the `anti-spoof` Edge Function on every claim submission, with results visible in the Admin Anti-Spoof Dashboard in real time.
+
 ---
 
 ## 🚀 Getting Started
