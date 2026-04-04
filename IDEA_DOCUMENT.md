@@ -865,13 +865,13 @@ Community Detection Algorithm (Louvain method):
 
 ---
 
-### UX Balance: Protecting Honest Workers
+### UX Balance: Protecting Honest Workers — Implemented
 
-The most critical design challenge is ensuring fraud detection **never unfairly punishes genuine workers** who might be experiencing legitimate issues (network drops in bad weather, GPS drift on budget phones, legitimate cross-zone deliveries).
+The most critical design challenge is ensuring fraud detection **never unfairly punishes genuine workers**. This is fully implemented in both backend and frontend.
 
-#### Principle: "Soft Hold, Not Hard Block"
+#### Principle: "Soft Hold, Not Hard Block" (Implemented)
 
-GigShield **never instantly rejects** a flagged claim. Instead:
+GigShield **never instantly rejects** a flagged claim. The `anti-spoof` Edge Function assigns one of three verification statuses — `cleared`, `soft_hold`, or `flagged` — and the `claim_status` enum includes `soft_hold` as a first-class state. Workers see friendly, non-punitive messaging in the UI:
 
 ```
 ┌────────────────────────────────────────────────────────┐
