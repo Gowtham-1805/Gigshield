@@ -821,9 +821,9 @@ Claims │        █
 
 ---
 
-### Layer 3: Network Graph Analysis (Identifying Fraud Rings)
+### Layer 3: Network Graph Analysis (Identifying Fraud Rings) — Implemented
 
-Once temporal clustering flags a suspicious batch of claims, **network graph analysis** maps the relationships between the flagged workers to identify the syndicate structure:
+Once temporal clustering flags a suspicious batch of claims, **network graph analysis** maps the relationships between the flagged workers. The Edge Function queries claims with `fraud_score ≥ 0.5` and cross-references device fingerprints to detect collusion:
 
 #### Data Points Analyzed (Beyond GPS Coordinates)
 
