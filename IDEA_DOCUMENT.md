@@ -944,6 +944,20 @@ This is the hardest edge case: a worker is genuinely stranded in a flooded zone,
 
 ---
 
+### Implementation Artifacts
+
+| Component | File / Table | Purpose |
+|-----------|-------------|---------|
+| **Anti-Spoof Edge Function** | `supabase/functions/anti-spoof/index.ts` | Core analysis engine — runs all 5 detection layers and persists results |
+| **Device Fingerprint Library** | `src/lib/device-fingerprint.ts` | Client-side signal collection (device hash, accelerometer, GPU, timezone) |
+| **Device Fingerprints Table** | `public.device_fingerprints` | Stores per-submission device signals for cross-worker comparison |
+| **Fraud Signals Table** | `public.fraud_signals` | Individual fraud indicators with type, severity, and score |
+| **Spoofing Analysis Table** | `public.spoofing_analysis` | Per-claim composite analysis with trust tier and verification status |
+| **Anti-Spoof Dashboard** | `src/components/admin/AntiSpoofDashboard.tsx` | Admin UI for real-time monitoring and manual resolution |
+| **Fraud Network Graph** | `src/components/admin/FraudNetworkGraph.tsx` | Visual network graph of connected fraud signals |
+| **Worker Report Panel** | `src/components/worker/WorkerReportPanel.tsx` | Worker-facing claim submission with device fingerprint collection |
+| **Claim History Page** | `src/pages/ClaimHistoryPage.tsx` | Shows `soft_hold` status with friendly verification messaging |
+
 ### Summary: Why GigShield's Architecture Resists This Attack
 
 | Attack Vector | GigShield's Defense |
